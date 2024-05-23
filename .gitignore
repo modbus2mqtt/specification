@@ -5,8 +5,6 @@ ssl/
 **/.angular/
 **/server/yaml-dir/local/secrets.yaml
 .vscode/*
-!.vscode/settings.json
-!.vscode/tasks.json
-!.vscode/extensions.json
 .history/*
 .jest/*
+**/.DS*_Store
