@@ -1,0 +1,638 @@
+
+
+import { IspecificationValidator } from "./ispecificationvalidator";
+import { IspecificationContributor } from "./ispecificationContributor";
+let  JSZip = require("jszip");
+let path = require("path");
+import { join } from "path";
+import * as fs from 'fs';
+import { IfileSpecification } from "./ifilespecification";
+import { M2mGitHub } from "./m2mgithub";
+import { Imessage, MessageTypes, MessageCategories, VariableTargetParameters, getParameterType, validateTranslation } from "specification.shared";
+import { ReadRegisterResult } from "./converter";
+import { Ispecification, IbaseSpecification, SpecificationStatus, getSpecificationI18nName, ImodbusSpecification, getSpecificationI18nEntityName, SpecificationFileUsage, FileLocation, IdentifiedStates, ISpecificationText, ImodbusEntity, Inumber, FCOffset, IminMax, Iselect, Itext, ModbusFunctionCodes, Ientity } from "specification.shared";
+import { ConfigSpecification } from "./configspec";
+import { ConverterMap } from "./convertermap";
+import { LogLevelEnum, Logger } from "./log";
+
+const log = new Logger('selectconverter')
+
+const maxIdentifiedSpecs = 0
+
+export class M2mSpecification  implements IspecificationValidator, IspecificationContributor {
+    private differentFilename = false
+    private notBackwardCompatible = false
+    static mqttdiscoverylanguage:string
+    static githubPersonalToken:string
+    static setMqttdiscoverylanguage(lang:string){
+        M2mSpecification.mqttdiscoverylanguage = lang
+    }
+    static setGgithubPersonalToken(token:string){
+        M2mSpecification.githubPersonalToken = token
+    }
+    constructor(private settings: Ispecification|ImodbusEntity[]) {
+        {
+            if (!(this.settings as ImodbusSpecification).i18n) {
+                (this.settings as ImodbusSpecification) = {
+                    filename: "",
+                    i18n: [],
+                    files: [],
+                    status: SpecificationStatus.new,
+                    entities: this.settings as ImodbusEntity[],
+                    identified: IdentifiedStates.unknown
+                }
+            }
+        }
+    }
+    contribute(note: string | undefined): Promise<number> {
+        return new Promise<number>((resolve, reject) => {
+            try {
+                let language = M2mSpecification.mqttdiscoverylanguage
+                let messages = this.validate(language)
+                let warnings: Imessage[] = []
+                let errors: string = ""
+                messages.forEach(msg => {
+                    if (msg.type == MessageTypes.identifiedByOthers)
+                        warnings.push(msg)
+                    else {
+                        errors += this.getMessageString(msg) + "\n"
+                    }
+                    this.generateAddedContributionMessage
+                })
+                if (messages.length > warnings.length) {
+
+                    throw new Error("Validation failed with errors: " + errors)
+                }
+
+                if (warnings.length > 0 && (!note || note.length == 0))
+                    throw new Error("Validation failed with warning, but no note text available")
+                let fileList = this.getSpecificationsFilesList()
+                let spec = this.settings as IbaseSpecification
+                let title = ""
+                let message = ""
+                switch (spec.status) {
+                    case SpecificationStatus.added:
+                        title = "Add specification "
+                        message = this.generateAddedContributionMessage(note)
+                        break;
+                    case SpecificationStatus.cloned:
+                        title = "Update specification "
+                        //if (spec.publicSpecification)
+                        //  message = this.isEqual(spec.publicSpecification)
+                        message = this.generateClonedContributionMessage()
+                        break;
+                }
+                title = title + getSpecificationI18nName(spec, language)
+                if (M2mSpecification.githubPersonalToken && M2mSpecification.githubPersonalToken.length) {
+                    let github = new M2mGitHub(M2mSpecification.githubPersonalToken, ConfigSpecification.getPublicDir())
+                    github.init().then(() => {
+                        github.commitFiles(ConfigSpecification.getLocalDir(), fileList, title, message).then(() => {
+                            github.createPullrequest(title, message).then(issue => {
+                                new ConfigSpecification().changeContributionStatus((this.settings as IbaseSpecification).filename, SpecificationStatus.contributed)
+                                resolve(issue)
+                            }).catch(reject)
+                        }).catch(reject)
+                    }).catch(reject)
+                }
+            }
+            catch (e) {
+                reject(e)
+            }
+        })
+    }
+
+    private generateClonedContributionMessage(): string {
+        // First contribution:
+        // Name of Specification(en)
+        let spec = this.settings as ImodbusSpecification
+        let message = `First contribution of ${getSpecificationI18nName(spec, "en")}(${spec.filename}) \nEntities:\n`
+        message = `${message}Languages: `
+        spec.i18n.forEach(l => {
+            message = `${message} ${l.lang} `
+        })
+        message = `${message}\nEntities:\n`
+        spec.entities.forEach(ent => {
+            message = `${message}\t${getSpecificationI18nEntityName(spec, "en", ent.id)}\n`
+        })
+        message = `${message}\nImages:\n`
+        spec.files.forEach(file => {
+            if (file.usage == SpecificationFileUsage.img)
+                message = `${message}\t ${file.url}\n`
+        })
+        message = `${message}\nDocumentation:\n`
+        spec.files.forEach(file => {
+            if (file.usage == SpecificationFileUsage.documentation)
+                message = `${message}\t ${file.url}\n`
+        })
+        return message
+    }
+
+    private generateAddedContributionMessage(note: string | undefined): string {
+        let rcmessage = this.generateClonedContributionMessage()
+        let spec = this.settings as ImodbusSpecification
+        this.notBackwardCompatible = false
+        this.differentFilename = false
+        if (spec.publicSpecification) {
+            rcmessage = rcmessage + "Changes:\n"
+            let messages = this.isEqual(spec.publicSpecification)
+            messages.forEach(
+                message => {
+                    rcmessage = rcmessage + this.getMessageString(message)
+                })
+            if (this.notBackwardCompatible) {
+                rcmessage = rcmessage + "\n!!! There are changes which are not backward compatible !!"
+                if (note == undefined)
+                    throw new Error("There are changes which are not backward compatible")
+            }
+
+            if (note != undefined)
+                rcmessage = rcmessage + "\n" + note
+
+        }
+        return rcmessage;
+    }
+    private getMessageString(message: Imessage): string {
+        switch (message.type) {
+            case MessageTypes.differentFilename:
+                this.differentFilename = true
+                return this.getMessageLocal(message, "Filename has been changed. A new public specification will be created")
+            case MessageTypes.missingEntity:
+                if (!this.differentFilename)
+                    this.notBackwardCompatible = true
+                return this.getMessageLocal(message, "Entity has been removed", !this.differentFilename)
+            case MessageTypes.differentConverter:
+                return this.getMessageLocal(message, "Converter has been changed")
+            case MessageTypes.addedEntity:
+                return this.getMessageLocal(message, "Entity has been added")
+            case MessageTypes.differentModbusAddress:
+                return this.getMessageLocal(message, "Modbus address has been changed")
+            case MessageTypes.differentFunctionCode:
+                return this.getMessageLocal(message, "Function code has been changed")
+            case MessageTypes.differentIcon:
+                return this.getMessageLocal(message, "Icon has been changed")
+            case MessageTypes.differentTargetParameter:
+                return this.getMessageLocal(message, "Variable configuration: Target parameter has been changed")
+            case MessageTypes.differentVariableEntityId:
+                return this.getMessageLocal(message, "Variable configuration: Referenced entity has been changed")
+            case MessageTypes.differentVariableConfiguration:
+                return this.getMessageLocal(message, "Variable configuration has been changed")
+            case MessageTypes.differentDeviceClass:
+                return this.getMessageLocal(message, "Device class has been changed")
+            case MessageTypes.differentIdentificationMax:
+                return this.getMessageLocal(message, "Max value has been changed")
+            case MessageTypes.differentIdentificationMin:
+                return this.getMessageLocal(message, "Min value has been changed")
+            case MessageTypes.differentIdentification:
+                return this.getMessageLocal(message, "Identification has been changed")
+            case MessageTypes.differentMultiplier:
+                return this.getMessageLocal(message, "Multiplier has been changed")
+            case MessageTypes.differentOffset:
+                return this.getMessageLocal(message, "Offset has been changed")
+            case MessageTypes.differentOptionTable:
+                return this.getMessageLocal(message, "Options have been changed")
+            case MessageTypes.differentStringlength:
+                return this.getMessageLocal(message, "String length has been changed")
+            case MessageTypes.differentManufacturer:
+                return this.getMessageLocal(message, "Manufacturer has been changed")
+            case MessageTypes.differentModel:
+                return this.getMessageLocal(message, "Model has been changed")
+            case MessageTypes.differentTranslation:
+                return this.getMessageLocal(message, "Translation has been changed")
+        }
+        return "unknown MessageType : " + message.type
+    }
+    private getMessageLocal(message: Imessage, messageText: string, notBackwardCompatible?: boolean): string {
+        let msg = structuredClone(messageText)
+        if (message.referencedEntity != undefined)
+            return msg + " " + getSpecificationI18nEntityName(this.settings as IbaseSpecification, "en", message.referencedEntity)
+        if (message.additionalInformation != undefined)
+            return msg + " " + message.additionalInformation
+        if (!notBackwardCompatible)
+            return " This will break compatibilty with previous version"
+        return msg
+    }
+    closeContribution(): void {
+        throw new Error("Method not implemented.");
+    }
+    getSpecificationsFilesList(): string[] {
+        let files: string[] = []
+        let spec = this.settings as IbaseSpecification
+        spec.files.forEach(fs => {
+            if (fs.fileLocation == FileLocation.Local)
+                files.push(join(fs.url.replace(/^\//g, "")))
+        })
+        if (files.length > 0) {
+            let p = path.dirname(files[0])
+            files.push(join(p, "files.yaml"))
+        }
+        files.push(join("specifications", spec.filename + ".yaml"))
+        return files;
+    }
+
+    writeFiles2Stream(root: string, res: NodeJS.WritableStream): void {
+        let zip = new JSZip()
+        let files = this.getSpecificationsFilesList()
+        files.forEach(file => {
+            zip.file(file, fs.readFileSync(join(root, file)))
+        })
+        zip.generateNodeStream({ type: 'nodebuffer', streamFiles: true }).pipe(res).on('finish', function () {
+            console.log("out.zip written.");
+        })
+    }
+
+    validate(language: string): Imessage[] {
+        let rc = this.validateSpecification(language, true)
+        let identfied = this.validateIdentification(language)
+        if (identfied.length > maxIdentifiedSpecs)
+            rc.push({ type: MessageTypes.identifiedByOthers, category: MessageCategories.validateOtherIdentification, additionalInformation: identfied })
+
+        if (!this.validateUniqueName(language))
+            rc.push({ type: MessageTypes.nonUniqueName, category: MessageCategories.validateSpecification })
+        if ((this.settings as ImodbusSpecification).identified != IdentifiedStates.identified)
+            rc.push({ type: MessageTypes.notIdentified, category: MessageCategories.validateSpecification })
+        return rc;
+    }
+
+    validateUniqueName(language: string): boolean {
+        let name = getSpecificationI18nName(this.settings as IbaseSpecification, language)
+        let rc = true;
+        new ConfigSpecification().filterAllSpecifications((spec) => {
+            if (rc && (this.settings as IbaseSpecification).filename != spec.filename) {
+                let texts = spec.i18n.find(lang => lang.lang == language)
+                if (texts && texts.texts)
+                    if ((texts.texts as ISpecificationText[]).find(text => text.textId == 'name' && text.text == name))
+                        rc = false;
+            }
+        })
+        return rc;
+    }
+    static fileToModbusSpecification(inSpec: IfileSpecification, values?:Map<number, ReadRegisterResult>): ImodbusSpecification {
+        if((values == undefined || values.size ==0 ))
+            values = new Map<number, ReadRegisterResult>()
+          
+        if (values.size ==0 && inSpec.testdata ) {
+            inSpec.testdata.forEach(data => {
+                values?.set(data.address, { data: [data.value], buffer: Buffer.from([data.value]) })
+            })
+        }
+    
+            let rc: ImodbusSpecification = Object.assign(inSpec);
+            for (let entityIndex = 0; entityIndex < inSpec.entities.length; entityIndex++) {
+                let entity = rc.entities[entityIndex];
+                if (entity.modbusAddress != undefined && entity.functionCode) {
+                    let sm = M2mSpecification.copyModbusDataToEntity(rc, entity.id, values);
+                    if (sm) {
+                        rc.entities[entityIndex] = sm;
+                    }
+                }
+            }
+            rc.identified = IdentifiedStates.unknown;
+            rc.entities.forEach(ent => {
+                switch (ent.identified) {
+                    case IdentifiedStates.notIdentified:
+                        rc.identified = IdentifiedStates.notIdentified;
+                        break;
+                    case IdentifiedStates.identified:
+                        if (rc.identified == undefined || rc.identified == IdentifiedStates.unknown)
+                            rc.identified = IdentifiedStates.identified;
+                        break;
+                }
+            });
+    
+            return rc;
+     }
+
+    static copyModbusDataToEntity(spec: Ispecification, entityId: number, values: Map<number, ReadRegisterResult>): ImodbusEntity {
+        let entity = spec.entities.find(ent => entityId == ent.id)
+        if (entity) {
+            let rc: ImodbusEntity = (structuredClone(entity) as ImodbusEntity);
+            let converter = ConverterMap.getConverter(entity);
+            if (converter) {
+                if (entity.modbusAddress != undefined && entity.functionCode) {
+                    try {
+                        var data: ReadRegisterResult = { data: [], buffer: Buffer.from("") };
+                        for (let address = entity.modbusAddress; address < entity.modbusAddress + converter.getModbusLength(entity); address++) {
+                            let value: ReadRegisterResult | undefined = undefined
+                            let readAddress = M2mSpecification.getReadFunctionCode(entity.functionCode)
+                            let readWriteAddress = M2mSpecification.getReadWriteFunctionCode(entity.functionCode)
+                            if (readAddress != undefined)
+                                if (values.get(readAddress * FCOffset + address) != undefined)
+                                    value = values.get(readAddress * FCOffset + address)
+                                else if (readWriteAddress)
+                                    value = values.get(readWriteAddress * FCOffset + address)
+                            if (value) {
+                                data.data = data.data.concat(value.data)
+                                if (address == entity.modbusAddress)
+                                    data.buffer = Buffer.concat([value.buffer])
+                                else
+                                    data.buffer = Buffer.concat([data.buffer, value.buffer])
+                            }
+                        }
+                        if (data.data.length > 0) {
+                            let mqtt = converter.modbus2mqtt(spec, entity.id, data);
+                            let identified = IdentifiedStates.unknown;
+                            if (entity.converterParameters)
+                                if ((entity.converter.name === "number" || entity.converter.name === "sensor")) {
+                                    if (!(entity.converterParameters as Inumber).identification)
+                                        (entity as ImodbusEntity).identified = IdentifiedStates.unknown;
+                                    else {
+                                        //Inumber
+                                        let mm: IminMax = (entity.converterParameters as Inumber).identification!;
+                                        identified = (mm.min <= (mqtt as number) && (mqtt as number) <= mm.max ? IdentifiedStates.identified : IdentifiedStates.notIdentified)
+                                    }
+                                }
+                                else {
+                                    if (!(entity.converterParameters as Itext).identification) {
+                                        if ((entity.converterParameters as Iselect).options || (entity.converterParameters as Iselect).optionModbusValues) {
+                                            // Iselect
+                                            identified = (mqtt != null ? IdentifiedStates.identified : IdentifiedStates.notIdentified)
+                                        } else { // no Converter parameters
+                                            identified = ((mqtt as string).length ? IdentifiedStates.identified : IdentifiedStates.unknown)
+                                        }
+                                    }
+                                    else {
+                                        // Itext
+                                        let reg = (entity.converterParameters as Itext).identification;
+                                        if (reg) {
+                                            let re = new RegExp("^" + reg + "$");
+                                            identified = re.test((mqtt as string)) ? IdentifiedStates.identified : IdentifiedStates.notIdentified
+                                        }
+
+                                    }
+
+                                }
+                            rc.identified = identified;
+                            rc.mqttValue = mqtt;
+                            rc.modbusValue = data.data;
+                        }
+                        else {
+                            rc.identified = IdentifiedStates.notIdentified;
+                            rc.mqttValue = "";
+                            rc.modbusValue = [];
+                        }
+                    } catch (error) {
+                        log.log(LogLevelEnum.error, error);
+                    }
+                }
+                else {
+                    log.log(LogLevelEnum.error, "entity has no modbusaddress: entity id:" + entity.id + " converter:" + entity.converter);
+                    // It remains an Ientity
+                }
+            }
+            else
+                log.log(LogLevelEnum.error, "Converter not found: " + entity.converter + " entity id: " + + entity.id);
+
+            return rc;
+        }
+        else {
+            let msg = "EntityId " + entityId + " not found in specifcation "
+            log.log(LogLevelEnum.error, msg)
+            throw new Error(msg)
+        }
+    }
+
+
+    validateIdentification(language: string,): string[] {
+        let identifiedSpecs: string[] = [];
+        let values = new Map<number, ReadRegisterResult>()
+        let fSpec: IfileSpecification
+        if ((this.settings as IfileSpecification).testdata)
+            fSpec = (this.settings as IfileSpecification)
+        else
+            fSpec = ConfigSpecification.toFileSpecification(this.settings as ImodbusSpecification)
+        fSpec.testdata.forEach(data => {
+            values?.set(data.address, { data: [data.value], buffer: Buffer.from([data.value]) })
+        })
+
+        new ConfigSpecification().filterAllSpecifications((spec) => {
+            if ([SpecificationStatus.cloned, SpecificationStatus.published, SpecificationStatus.contributed].includes(spec.status)) {
+                let mSpec = M2mSpecification.fileToModbusSpecification(spec, values)
+                let specName = getSpecificationI18nName(spec, language)
+                if (mSpec && mSpec.identified == IdentifiedStates.identified && (this.settings as ImodbusSpecification).filename && (this.settings as ImodbusSpecification).filename != spec.filename) {
+                    if (specName)
+                        identifiedSpecs.push(specName)
+                    else
+                        identifiedSpecs.push("unknown")
+                }
+            }
+        })
+        return identifiedSpecs;
+    }
+    static getWriteFunctionCode(functionCode: ModbusFunctionCodes): ModbusFunctionCodes | undefined {
+        switch (functionCode) {
+            case ModbusFunctionCodes.readWriteHoldingRegisters:
+                return ModbusFunctionCodes.writeHoldingRegisters
+            case ModbusFunctionCodes.readWriteCoils:
+                return ModbusFunctionCodes.writeCoils
+            case ModbusFunctionCodes.IllegalFunctionCode:
+                return undefined
+            default:
+                return functionCode
+        }
+    }
+
+    static getReadFunctionCode(functionCode: ModbusFunctionCodes): ModbusFunctionCodes | undefined {
+        switch (functionCode) {
+            case ModbusFunctionCodes.readWriteHoldingRegisters:
+                return ModbusFunctionCodes.readHoldingRegisters
+            case ModbusFunctionCodes.readWriteCoils:
+                return ModbusFunctionCodes.readCoils
+            case ModbusFunctionCodes.IllegalFunctionCode:
+                return undefined
+            default:
+                return functionCode
+        }
+        
+    }
+    static getReadWriteFunctionCode(functionCode: ModbusFunctionCodes): ModbusFunctionCodes | undefined {
+        switch (functionCode) {
+            case ModbusFunctionCodes.readHoldingRegisters:
+                return ModbusFunctionCodes.readWriteHoldingRegisters
+            case ModbusFunctionCodes.readCoils:
+                return ModbusFunctionCodes.readWriteCoils
+            case ModbusFunctionCodes.readWriteHoldingRegisters:
+            case ModbusFunctionCodes.readWriteCoils:
+                return functionCode
+            case ModbusFunctionCodes.IllegalFunctionCode:
+                return undefined
+            default:
+                return undefined
+        }
+    }
+    
+    static getModbusAddressFCFromEntity(entity: Ientity) {
+        return entity.modbusAddress + FCOffset * entity.functionCode
+    }
+        
+    
+        private getPropertyFromVariable(entityId: number, targetParameter: VariableTargetParameters): string | number | undefined {
+            let ent = (this.settings as ImodbusSpecification).entities.find(e => e.variableConfiguration &&
+                e.variableConfiguration.targetParameter == targetParameter &&
+                (e.variableConfiguration.entityId && e.variableConfiguration.entityId == entityId))
+            if (ent)
+                return ent.mqttValue
+            return undefined
+        }
+        private getEntityFromId(entityId: number): ImodbusEntity | undefined {
+            let ent = (this.settings as ImodbusSpecification).entities.find(e => e.id == entityId)
+            if (!ent)
+                return undefined
+            return ent
+        }
+        static getFileUsage(url: string): SpecificationFileUsage {
+            let name = url.toLowerCase();
+            if (name.endsWith('.pdf'))
+                return SpecificationFileUsage.documentation;
+            if (name.endsWith('.jpg') || name.endsWith('.jpeg') || name.endsWith('.png') || name.endsWith('.bmp'))
+                return SpecificationFileUsage.img;
+            return SpecificationFileUsage.documentation
+        }
+        getUom(entityId: number): string | undefined {
+            let rc = this.getPropertyFromVariable(entityId, VariableTargetParameters.entityUom)
+            if (rc)
+                return rc as string | undefined;
+            let ent = this.getEntityFromId(entityId)
+            if (!ent || !ent.converterParameters || !(ent.converterParameters as Inumber)!.uom)
+                return undefined
+    
+            return (ent.converterParameters as Inumber)!.uom
+        }
+        getMultiplier(entityId: number): number | undefined {
+            let rc = this.getPropertyFromVariable(entityId, VariableTargetParameters.entityMultiplier)
+            if (rc)
+                return rc as number | undefined;
+            let ent = this.getEntityFromId(entityId)
+            if (!ent || !ent.converterParameters || undefined == (ent.converterParameters as Inumber)!.multiplier)
+                return undefined
+    
+            return (ent.converterParameters as Inumber)!.multiplier
+        }
+        getOffset(entityId: number): number | undefined {
+            let rc = this.getPropertyFromVariable(entityId, VariableTargetParameters.entityOffset)
+            if (rc)
+                return rc as number | undefined;
+            let ent = this.getEntityFromId(entityId)
+            if (!ent || !ent.converterParameters || (ent.converterParameters as Inumber)!.offset == undefined)
+                return undefined
+            return (ent.converterParameters as Inumber)!.offset
+        }
+        isVariable(checkParameter: VariableTargetParameters): boolean {
+            let ent = (this.settings as ImodbusSpecification).entities.find(e => e.variableConfiguration &&
+                e.variableConfiguration.targetParameter == checkParameter)
+            return ent != undefined
+        }
+    
+        isEqualValue(v1: any, v2: any): boolean {
+            if (!v1 && !v2)
+                return true
+            if (v1 && v2 && v1 == v2)
+                return true
+            return false;
+        }
+        isEqual(other: Ispecification): Imessage[] {
+            let rc: Imessage[] = [];
+            let spec = this.settings as ImodbusSpecification
+            if (spec.filename != other.filename)
+                rc.push({ type: MessageTypes.differentFilename, category: MessageCategories.compare });
+            spec.entities.forEach(ent => {
+                if (!other.entities.find(oent => oent.id == ent.id))
+                    rc.push({ type: MessageTypes.addedEntity, category: MessageCategories.compareEntity, referencedEntity: ent.id })
+            })
+            other.entities.forEach((oent) => {
+                let ent = spec.entities.find(ent => oent.id == ent.id)
+                if (!ent)
+                    rc.push({ type: MessageTypes.missingEntity, category: MessageCategories.compare, additionalInformation: getSpecificationI18nEntityName(other, "en", oent.id) })
+                else {
+                    if (!this.isEqualValue(oent.converter.name, ent.converter.name))
+                        rc.push({ type: MessageTypes.differentConverter, category: MessageCategories.compareEntity, referencedEntity: ent.id })
+                    if (!this.isEqualValue(oent.modbusAddress, ent.modbusAddress))
+                        rc.push({ type: MessageTypes.differentModbusAddress, category: MessageCategories.compareEntity, referencedEntity: ent.id })
+                    if (!this.isEqualValue(oent.functionCode, ent.functionCode))
+                        rc.push({ type: MessageTypes.differentFunctionCode, category: MessageCategories.compareEntity, referencedEntity: ent.id })
+                    if (!this.isEqualValue(oent.icon, ent.icon))
+                        rc.push({ type: MessageTypes.differentIcon, category: MessageCategories.compareEntity, referencedEntity: ent.id })
+                    if (oent.variableConfiguration && ent.variableConfiguration) {
+                        if (!this.isEqualValue(oent.variableConfiguration.targetParameter, ent.variableConfiguration.targetParameter))
+                            rc.push({ type: MessageTypes.differentTargetParameter, category: MessageCategories.compareEntity, referencedEntity: ent.id })
+                        else if (!this.isEqualValue(oent.variableConfiguration.entityId, ent.variableConfiguration.entityId))
+                            rc.push({ type: MessageTypes.differentVariableEntityId, category: MessageCategories.compareEntity, referencedEntity: ent.id })
+                    }
+                    else if (oent.variableConfiguration || ent.variableConfiguration)
+                        rc.push({ type: MessageTypes.differentVariableConfiguration, category: MessageCategories.compareEntity, referencedEntity: ent.id })
+                    if (ent.converterParameters && oent.converterParameters)
+                        switch (getParameterType(oent.converter)) {
+                            case "Inumber": if (!this.isEqualValue((oent.converterParameters as Inumber).device_class, (ent.converterParameters as Inumber).device_class))
+                                rc.push({ type: MessageTypes.differentDeviceClass, category: MessageCategories.compareEntity, referencedEntity: ent.id })
+                                if ((oent.converterParameters as Inumber).identification && (ent.converterParameters as Inumber).identification) {
+                                    if (!this.isEqualValue((oent.converterParameters as Inumber).identification!.max, (ent.converterParameters as Inumber).identification!.max))
+                                        rc.push({ type: MessageTypes.differentIdentificationMax, category: MessageCategories.compareEntity, referencedEntity: ent.id })
+                                    else
+                                        if (!this.isEqualValue((oent.converterParameters as Inumber).identification!.min, (ent.converterParameters as Inumber).identification!.min))
+                                            rc.push({ type: MessageTypes.differentIdentificationMin, category: MessageCategories.compareEntity, referencedEntity: ent.id })
+                                }
+                                else if ((oent.converterParameters as Inumber).identification || (ent.converterParameters as Inumber).identification)
+                                    rc.push({ type: MessageTypes.differentIdentification, category: MessageCategories.compareEntity, referencedEntity: ent.id })
+                                if (!this.isEqualValue((oent.converterParameters as Inumber).multiplier, (ent.converterParameters as Inumber).multiplier))
+                                    rc.push({ type: MessageTypes.differentMultiplier, category: MessageCategories.compareEntity, referencedEntity: ent.id })
+                                if (!this.isEqualValue((oent.converterParameters as Inumber).offset, (ent.converterParameters as Inumber).offset))
+                                    rc.push({ type: MessageTypes.differentOffset, category: MessageCategories.compareEntity, referencedEntity: ent.id })
+                                break;
+                            case "Iselect": if (JSON.stringify((oent.converterParameters as Iselect).optionModbusValues) != JSON.stringify((ent.converterParameters as Iselect).optionModbusValues))
+                                rc.push({ type: MessageTypes.differentOptionTable, category: MessageCategories.compareEntity, referencedEntity: ent.id })
+                                break;
+                            case "Itext": if (!this.isEqualValue((oent.converterParameters as Itext).stringlength, (ent.converterParameters as Itext).stringlength))
+                                rc.push({ type: MessageTypes.differentStringlength, category: MessageCategories.compareEntity, referencedEntity: ent.id })
+                                if (!this.isEqualValue((oent.converterParameters as Itext).identification, (ent.converterParameters as Itext).identification))
+                                    rc.push({ type: MessageTypes.differentIdentification, category: MessageCategories.compareEntity, referencedEntity: ent.id })
+                                break;
+                        }
+                }
+            })
+    
+            if (JSON.stringify(spec.i18n) != JSON.stringify(other.i18n))
+                rc.push({ type: MessageTypes.differentTranslation, category: MessageCategories.compare })
+            if (!this.isEqualValue(spec.manufacturer, other.manufacturer))
+                rc.push({ type: MessageTypes.differentManufacturer, category: MessageCategories.compare })
+            if (!this.isEqualValue(spec.model, other.model))
+                rc.push({ type: MessageTypes.differentModel, category: MessageCategories.compare })
+            if (!this.isEqualValue(spec.identification, other.identification))
+                rc.push({ type: MessageTypes.differentIdentification, category: MessageCategories.compare })
+            return rc;
+        }
+       
+        validateFiles(msgs: Imessage[]) {
+            let category = MessageCategories.validateFiles
+            let spec = this.settings as ImodbusSpecification
+            let hasDocumentation = false;
+            let hasImage = false;
+            spec.files.forEach(f => {
+                if (f.usage == SpecificationFileUsage.documentation)
+                    hasDocumentation = true
+                if (f.usage == SpecificationFileUsage.img)
+                    hasImage = true
+            })
+            if (!hasDocumentation)
+                msgs.push({ type: MessageTypes.noDocumentation, category: category })
+            if (!hasImage)
+                msgs.push({ type: MessageTypes.noImage, category: category })
+        }
+        validateSpecification(language: string, forContribution: boolean = false): Imessage[] {
+            let msgs: Imessage[] = []
+            let spec = this.settings as ImodbusSpecification
+            if (spec.entities.length == 0)
+                msgs.push({ type: MessageTypes.noEntity, category: MessageCategories.validateEntity })
+            this.validateFiles(msgs)
+            validateTranslation(spec,language, msgs)
+            if (forContribution)
+                validateTranslation(spec,"en", msgs)
+            return msgs
+        }
+        getBaseFilename(filename: string): string {
+            let idx = filename.lastIndexOf('/')
+            if (idx >= 0)
+                return filename.substring(idx + 1);
+            return filename;
+        }
+    
+}
+
