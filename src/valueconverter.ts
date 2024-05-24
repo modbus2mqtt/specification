@@ -1,9 +1,15 @@
 
-import { Converter } from "./converter";
-import { Ispecification, Ivalue } from "specification.shared";
+import { Converter, ReadRegisterResult } from "./converter";
+import { Converters, Ispecification, Ivalue, ModbusRegisterType } from "specification.shared";
 
 export class ValueConverter extends Converter {
-    constructor(component?: string) {
+    override mqtt2modbus(spec: Ispecification, entityid: number, _value: string | number): ReadRegisterResult {
+        throw new Error("fixed value has no modbus value.");
+    }
+    override getModbusRegisterTypes(): ModbusRegisterType[] {
+        return [ ModbusRegisterType.AnalogInputs, ModbusRegisterType.HoldingRegister]
+    }
+    constructor(component?: Converters) {
         if (!component)
             component = "value"
         super(component);

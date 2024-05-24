@@ -1,11 +1,11 @@
-import { ImodbusEntity } from "specification.shared";
+import { Converters, ImodbusEntity, ModbusRegisterType } from "specification.shared";
 import { Converter, ReadRegisterResult } from "./converter";
 import { EnumNumberFormat, Inumber, Ispecification,  Ientity } from 'specification.shared';
 import { M2mSpecification } from "./m2mspecification";
 
 export class NumberConverter extends Converter {
-    override isReadOnly(): boolean { return false; }
-    constructor(component?: string) {
+
+    constructor(component?: Converters) {
         if (!component)
             component = "number";
         super(component);
@@ -73,6 +73,8 @@ export class NumberConverter extends Converter {
                 return 1;
         }
     }
-
+    override getModbusRegisterTypes(): ModbusRegisterType[] {
+        return [ModbusRegisterType.HoldingRegister, ModbusRegisterType.AnalogInputs]
+    }
 }
 

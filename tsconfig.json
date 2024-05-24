@@ -7,7 +7,6 @@
     "outDir": "./dist",
     "forceConsistentCasingInFileNames": true,
     "strict": true,
-
     "noImplicitOverride": true,
     "noPropertyAccessFromIndexSignature": true,
     "strictPropertyInitialization": false,
@@ -31,4 +30,7 @@
     "dist/**/*",
     "**/__tests__/**",
   ],
+  "paths":{
+    "specification/src/*": ["./src/*"]
+  }
 }

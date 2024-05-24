@@ -8,3 +8,4 @@ ssl/
 .history/*
 .jest/*
 **/.DS*_Store
+package-lock.json

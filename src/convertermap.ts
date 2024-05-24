@@ -2,7 +2,6 @@ import { Converter } from "./converter";
 import { NumberConverter } from "./numberConverter";
 import { TextConverter } from "./textConverter";
 import { SelectConverter } from "./selectConverter";
-import { SensorConverter } from "./sensorConverter";
 import { ValueConverter } from "./valueconverter";
 import { Ientity, Iconverter, Converters } from 'specification.shared';
 import { BinaryConverter } from "./binaryConverter";
@@ -19,7 +18,7 @@ export class ConverterMap extends Map<Converters, Converter> {
         ConverterMap.getConverterMap().forEach((con, name) => {
             let c: Iconverter = {
                 name: name,
-                functionCodes: con.getModbusFunctionCodes()
+                registerTypes: con.getModbusRegisterTypes()
             }
             rc.push(c)
         })
@@ -32,7 +31,7 @@ export class ConverterMap extends Map<Converters, Converter> {
         if (cv) {
             let c: Iconverter = {
                 name: entity.converter.name,
-                functionCodes: cv.getModbusFunctionCodes()
+                registerTypes: cv.getModbusRegisterTypes()
             }
             return c;
         }
@@ -58,17 +57,11 @@ export class ConverterMap extends Map<Converters, Converter> {
     //@ts-ignore
     private static _initialize = (() => {
         if (ConverterMap.converterMap.size == 0) {
-            ConverterMap.converterMap.set("sensor", new SensorConverter());
-            // read only: sensor
-            ConverterMap.converterMap.set("text_sensor", new TextConverter());
-            ConverterMap.converterMap.set("select_sensor", new SensorConverter());
-            ConverterMap.converterMap.set("binary_sensor", new BinaryConverter());
-            ConverterMap.converterMap.set("value_sensor", new SensorConverter());
             // read/write not a sensor
             ConverterMap.converterMap.set("number", new NumberConverter());
             ConverterMap.converterMap.set("select", new SelectConverter(ConverterMap.mqttdiscoveryLanguage));
             ConverterMap.converterMap.set("text", new TextConverter());
-            ConverterMap.converterMap.set("button", new BinaryConverter());
+            ConverterMap.converterMap.set("binary", new BinaryConverter());
             ConverterMap.converterMap.set("value", new ValueConverter());
 
         }

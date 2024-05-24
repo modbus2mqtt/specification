@@ -8,9 +8,9 @@ import { join } from "path";
 import * as fs from 'fs';
 import { IfileSpecification } from "./ifilespecification";
 import { M2mGitHub } from "./m2mgithub";
-import { Imessage, MessageTypes, MessageCategories, VariableTargetParameters, getParameterType, validateTranslation } from "specification.shared";
+import { Imessage, MessageTypes, MessageCategories, VariableTargetParameters, getParameterType, validateTranslation, ModbusRegisterType } from "specification.shared";
 import { ReadRegisterResult } from "./converter";
-import { Ispecification, IbaseSpecification, SpecificationStatus, getSpecificationI18nName, ImodbusSpecification, getSpecificationI18nEntityName, SpecificationFileUsage, FileLocation, IdentifiedStates, ISpecificationText, ImodbusEntity, Inumber, FCOffset, IminMax, Iselect, Itext, ModbusFunctionCodes, Ientity } from "specification.shared";
+import { Ispecification, IbaseSpecification, SpecificationStatus, getSpecificationI18nName, ImodbusSpecification, getSpecificationI18nEntityName, SpecificationFileUsage, FileLocation, IdentifiedStates, ISpecificationText, ImodbusEntity, Inumber, IminMax, Iselect, Itext } from "specification.shared";
 import { ConfigSpecification } from "./configspec";
 import { ConverterMap } from "./convertermap";
 import { LogLevelEnum, Logger } from "./log";
@@ -18,7 +18,18 @@ import { LogLevelEnum, Logger } from "./log";
 const log = new Logger('selectconverter')
 
 const maxIdentifiedSpecs = 0
-
+export interface ImodbusValues {
+    holdingRegisters: Map<number, ReadRegisterResult>,
+    analogInputs:Map<number, ReadRegisterResult>,
+    coils:Map<number, ReadRegisterResult>
+}
+export function emptyModbusValues():ImodbusValues  {
+    return {
+    holdingRegisters: new Map<number, ReadRegisterResult>(),
+    coils: new Map<number, ReadRegisterResult>(),
+    analogInputs: new Map<number, ReadRegisterResult>()
+}
+}
 export class M2mSpecification  implements IspecificationValidator, IspecificationContributor {
     private differentFilename = false
     private notBackwardCompatible = false
@@ -57,7 +68,6 @@ export class M2mSpecification  implements IspecificationValidator, Ispecificatio
                     else {
                         errors += this.getMessageString(msg) + "\n"
                     }
-                    this.generateAddedContributionMessage
                 })
                 if (messages.length > warnings.length) {
 
@@ -79,7 +89,10 @@ export class M2mSpecification  implements IspecificationValidator, Ispecificatio
                         title = "Update specification "
                         //if (spec.publicSpecification)
                         //  message = this.isEqual(spec.publicSpecification)
-                        message = this.generateClonedContributionMessage()
+                        let pub = (spec as any).publicSpecification
+                        
+
+                        message = this.generateClonedContributionMessage(note, pub)
                         break;
                 }
                 title = title + getSpecificationI18nName(spec, language)
@@ -101,7 +114,7 @@ export class M2mSpecification  implements IspecificationValidator, Ispecificatio
         })
     }
 
-    private generateClonedContributionMessage(): string {
+    private generateAddedContributionMessage(note: string | undefined): string {
         // First contribution:
         // Name of Specification(en)
         let spec = this.settings as ImodbusSpecification
@@ -127,18 +140,19 @@ export class M2mSpecification  implements IspecificationValidator, Ispecificatio
         return message
     }
 
-    private generateAddedContributionMessage(note: string | undefined): string {
-        let rcmessage = this.generateClonedContributionMessage()
+    private generateClonedContributionMessage(note:string| undefined, publicSpecification:IfileSpecification|undefined): string {
+        let rcmessage = this.generateAddedContributionMessage(note)
         let spec = this.settings as ImodbusSpecification
         this.notBackwardCompatible = false
         this.differentFilename = false
-        if (spec.publicSpecification) {
+        if (publicSpecification) {
             rcmessage = rcmessage + "Changes:\n"
-            let messages = this.isEqual(spec.publicSpecification)
+            let messages = this.isEqual(publicSpecification)
             messages.forEach(
                 message => {
                     rcmessage = rcmessage + this.getMessageString(message)
                 })
+                // TODO Check backward compatibility
             if (this.notBackwardCompatible) {
                 rcmessage = rcmessage + "\n!!! There are changes which are not backward compatible !!"
                 if (note == undefined)
@@ -266,21 +280,33 @@ export class M2mSpecification  implements IspecificationValidator, Ispecificatio
         })
         return rc;
     }
-    static fileToModbusSpecification(inSpec: IfileSpecification, values?:Map<number, ReadRegisterResult>): ImodbusSpecification {
-        if((values == undefined || values.size ==0 ))
-            values = new Map<number, ReadRegisterResult>()
-          
-        if (values.size ==0 && inSpec.testdata ) {
-            inSpec.testdata.forEach(data => {
-                values?.set(data.address, { data: [data.value], buffer: Buffer.from([data.value]) })
+    static fileToModbusSpecification(inSpec: IfileSpecification, values?:ImodbusValues): ImodbusSpecification {
+        let valuesLocal = values
+        if(valuesLocal == undefined ){
+            valuesLocal = emptyModbusValues() 
+        }
+        // copy from test data if there are no values passed
+        if ( values == undefined && inSpec.testdata && (
+             (inSpec.testdata.analogInputs && inSpec.testdata.analogInputs.length >0)  ||
+              (inSpec.testdata.holdingRegisters &&inSpec.testdata.holdingRegisters.length >0 ) ||
+              (inSpec.testdata.coils && inSpec.testdata.coils.length >0  )
+            )) {
+            inSpec.testdata.holdingRegisters?.forEach(data => {
+                valuesLocal.holdingRegisters.set(data.address, { data: [data.value], buffer: Buffer.from([data.value]) })
+            })
+            inSpec.testdata.analogInputs?.forEach(data => {
+                valuesLocal.analogInputs.set(data.address, { data: [data.value], buffer: Buffer.from([data.value]) })
+            })
+            inSpec.testdata.coils?.forEach(data => {
+                valuesLocal.coils.set(data.address, { data: [data.value], buffer: Buffer.from([data.value]) })
             })
         }
     
             let rc: ImodbusSpecification = Object.assign(inSpec);
             for (let entityIndex = 0; entityIndex < inSpec.entities.length; entityIndex++) {
                 let entity = rc.entities[entityIndex];
-                if (entity.modbusAddress != undefined && entity.functionCode) {
-                    let sm = M2mSpecification.copyModbusDataToEntity(rc, entity.id, values);
+                if (entity.modbusAddress != undefined && entity.registerType) {
+                    let sm = M2mSpecification.copyModbusDataToEntity(rc, entity.id, valuesLocal);
                     if (sm) {
                         rc.entities[entityIndex] = sm;
                     }
@@ -302,24 +328,31 @@ export class M2mSpecification  implements IspecificationValidator, Ispecificatio
             return rc;
      }
 
-    static copyModbusDataToEntity(spec: Ispecification, entityId: number, values: Map<number, ReadRegisterResult>): ImodbusEntity {
+    static copyModbusDataToEntity(spec: Ispecification, entityId: number, values: ImodbusValues): ImodbusEntity {
         let entity = spec.entities.find(ent => entityId == ent.id)
         if (entity) {
             let rc: ImodbusEntity = (structuredClone(entity) as ImodbusEntity);
             let converter = ConverterMap.getConverter(entity);
             if (converter) {
-                if (entity.modbusAddress != undefined && entity.functionCode) {
+                if (entity.modbusAddress != undefined ) {
                     try {
                         var data: ReadRegisterResult = { data: [], buffer: Buffer.from("") };
                         for (let address = entity.modbusAddress; address < entity.modbusAddress + converter.getModbusLength(entity); address++) {
                             let value: ReadRegisterResult | undefined = undefined
-                            let readAddress = M2mSpecification.getReadFunctionCode(entity.functionCode)
-                            let readWriteAddress = M2mSpecification.getReadWriteFunctionCode(entity.functionCode)
-                            if (readAddress != undefined)
-                                if (values.get(readAddress * FCOffset + address) != undefined)
-                                    value = values.get(readAddress * FCOffset + address)
-                                else if (readWriteAddress)
-                                    value = values.get(readWriteAddress * FCOffset + address)
+
+                            let readFunctionCode = M2mSpecification.getReadFunctionCode(entity.registerType)
+                            switch(entity.registerType){
+                                case ModbusRegisterType.AnalogInputs:
+                                        value = values.analogInputs.get(address)
+                                        break;
+                                case ModbusRegisterType.HoldingRegister:
+                                        value = values.holdingRegisters.get(address)
+                                        break; 
+                                case ModbusRegisterType.Coils:
+                                        value = values.coils.get(address)
+                                        break;                           
+                                    
+                            }
                             if (value) {
                                 data.data = data.data.concat(value.data)
                                 if (address == entity.modbusAddress)
@@ -332,7 +365,7 @@ export class M2mSpecification  implements IspecificationValidator, Ispecificatio
                             let mqtt = converter.modbus2mqtt(spec, entity.id, data);
                             let identified = IdentifiedStates.unknown;
                             if (entity.converterParameters)
-                                if ((entity.converter.name === "number" || entity.converter.name === "sensor")) {
+                                if ((entity.converter.name === "number" )) {
                                     if (!(entity.converterParameters as Inumber).identification)
                                         (entity as ImodbusEntity).identified = IdentifiedStates.unknown;
                                     else {
@@ -392,21 +425,45 @@ export class M2mSpecification  implements IspecificationValidator, Ispecificatio
     }
 
 
-    validateIdentification(language: string,): string[] {
+    validateIdentification(language: string): string[] {
         let identifiedSpecs: string[] = [];
-        let values = new Map<number, ReadRegisterResult>()
+        let values = emptyModbusValues()
         let fSpec: IfileSpecification
         if ((this.settings as IfileSpecification).testdata)
             fSpec = (this.settings as IfileSpecification)
         else
             fSpec = ConfigSpecification.toFileSpecification(this.settings as ImodbusSpecification)
-        fSpec.testdata.forEach(data => {
-            values?.set(data.address, { data: [data.value], buffer: Buffer.from([data.value]) })
-        })
 
+        fSpec.testdata.holdingRegisters?.forEach(data => {
+            values.holdingRegisters.set(data.address, { data: [data.value], buffer: Buffer.from([data.value])})
+        })
+        fSpec.testdata.analogInputs?.forEach(data => {
+            values.analogInputs.set(data.address, { data: [data.value], buffer: Buffer.from([data.value]) })
+        })
+        fSpec.testdata.coils?.forEach(data => {
+            values.coils.set(data.address, { data: [data.value], buffer: Buffer.from([data.value]) })
+        })
         new ConfigSpecification().filterAllSpecifications((spec) => {
             if ([SpecificationStatus.cloned, SpecificationStatus.published, SpecificationStatus.contributed].includes(spec.status)) {
-                let mSpec = M2mSpecification.fileToModbusSpecification(spec, values)
+                var mSpec:ImodbusSpecification| undefined = undefined
+                switch(spec.status){
+                    case SpecificationStatus.published:
+                        mSpec = M2mSpecification.fileToModbusSpecification(spec, values)
+                        break;
+                    case SpecificationStatus.contributed:
+                        if( spec.publicSpecification)
+                            mSpec = M2mSpecification.fileToModbusSpecification(spec.publicSpecification, values)
+                        else
+                            mSpec = M2mSpecification.fileToModbusSpecification(spec, values)
+                        break;
+                    case SpecificationStatus.cloned:
+                        if( spec.publicSpecification)
+                            mSpec = M2mSpecification.fileToModbusSpecification(spec.publicSpecification, values)
+                        else
+                            log.log(LogLevelEnum.error, "Cloned Specification with no public Specification " + spec.filename )
+                        break;
+
+                }
                 let specName = getSpecificationI18nName(spec, language)
                 if (mSpec && mSpec.identified == IdentifiedStates.identified && (this.settings as ImodbusSpecification).filename && (this.settings as ImodbusSpecification).filename != spec.filename) {
                     if (specName)
@@ -418,54 +475,21 @@ export class M2mSpecification  implements IspecificationValidator, Ispecificatio
         })
         return identifiedSpecs;
     }
-    static getWriteFunctionCode(functionCode: ModbusFunctionCodes): ModbusFunctionCodes | undefined {
+    static getWriteFunctionCode(functionCode: ModbusRegisterType): number {
         switch (functionCode) {
-            case ModbusFunctionCodes.readWriteHoldingRegisters:
-                return ModbusFunctionCodes.writeHoldingRegisters
-            case ModbusFunctionCodes.readWriteCoils:
-                return ModbusFunctionCodes.writeCoils
-            case ModbusFunctionCodes.IllegalFunctionCode:
-                return undefined
+            case ModbusRegisterType.HoldingRegister:
+                return 16
+            case ModbusRegisterType.Coils:
+                return 15
             default:
-                return functionCode
+                throw new Error("No Registertype available or Registertype is not writable ")
         }
     }
 
-    static getReadFunctionCode(functionCode: ModbusFunctionCodes): ModbusFunctionCodes | undefined {
-        switch (functionCode) {
-            case ModbusFunctionCodes.readWriteHoldingRegisters:
-                return ModbusFunctionCodes.readHoldingRegisters
-            case ModbusFunctionCodes.readWriteCoils:
-                return ModbusFunctionCodes.readCoils
-            case ModbusFunctionCodes.IllegalFunctionCode:
-                return undefined
-            default:
-                return functionCode
-        }
-        
+    static getReadFunctionCode(functionCode: ModbusRegisterType): number | undefined {
+        return functionCode      
     }
-    static getReadWriteFunctionCode(functionCode: ModbusFunctionCodes): ModbusFunctionCodes | undefined {
-        switch (functionCode) {
-            case ModbusFunctionCodes.readHoldingRegisters:
-                return ModbusFunctionCodes.readWriteHoldingRegisters
-            case ModbusFunctionCodes.readCoils:
-                return ModbusFunctionCodes.readWriteCoils
-            case ModbusFunctionCodes.readWriteHoldingRegisters:
-            case ModbusFunctionCodes.readWriteCoils:
-                return functionCode
-            case ModbusFunctionCodes.IllegalFunctionCode:
-                return undefined
-            default:
-                return undefined
-        }
-    }
-    
-    static getModbusAddressFCFromEntity(entity: Ientity) {
-        return entity.modbusAddress + FCOffset * entity.functionCode
-    }
-        
-    
-        private getPropertyFromVariable(entityId: number, targetParameter: VariableTargetParameters): string | number | undefined {
+    private getPropertyFromVariable(entityId: number, targetParameter: VariableTargetParameters): string | number | undefined {
             let ent = (this.settings as ImodbusSpecification).entities.find(e => e.variableConfiguration &&
                 e.variableConfiguration.targetParameter == targetParameter &&
                 (e.variableConfiguration.entityId && e.variableConfiguration.entityId == entityId))
@@ -547,7 +571,7 @@ export class M2mSpecification  implements IspecificationValidator, Ispecificatio
                         rc.push({ type: MessageTypes.differentConverter, category: MessageCategories.compareEntity, referencedEntity: ent.id })
                     if (!this.isEqualValue(oent.modbusAddress, ent.modbusAddress))
                         rc.push({ type: MessageTypes.differentModbusAddress, category: MessageCategories.compareEntity, referencedEntity: ent.id })
-                    if (!this.isEqualValue(oent.functionCode, ent.functionCode))
+                    if (!this.isEqualValue(oent.registerType, ent.registerType))
                         rc.push({ type: MessageTypes.differentFunctionCode, category: MessageCategories.compareEntity, referencedEntity: ent.id })
                     if (!this.isEqualValue(oent.icon, ent.icon))
                         rc.push({ type: MessageTypes.differentIcon, category: MessageCategories.compareEntity, referencedEntity: ent.id })

@@ -1,10 +1,10 @@
 import { Converter } from "./converter";
-import { Ientity,Ispecification } from 'specification.shared';
+import { Converters, Ientity,Ispecification, ModbusRegisterType } from 'specification.shared';
 import { ReadRegisterResult } from "./converter";
 
 export class BinaryConverter extends Converter {
-    override isReadOnly(): boolean { return false; }
-    constructor(component?: string) {
+
+    constructor(component?: Converters) {
         if (!component)
             component = "number";
         super(component);
@@ -12,7 +12,7 @@ export class BinaryConverter extends Converter {
     modbus2mqtt(_spec: Ispecification, _entityid: number, value: ReadRegisterResult): number | string {
         return value.data[0] ? "ON" : "OFF";
     }
-
+    
     override mqtt2modbus(_spec: Ispecification, _entityid: number, value: number | string): ReadRegisterResult {
         return value == "ON" ? { data: [1], buffer: Buffer.from([1]) } : { data: [0], buffer: Buffer.from([0]) }
 
@@ -20,5 +20,8 @@ export class BinaryConverter extends Converter {
     override getParameterType(_entity: Ientity): string | undefined {
         return "Ibinary";
     }
-}
+    override getModbusRegisterTypes(): ModbusRegisterType[] {
+        return [ ModbusRegisterType.Coils,ModbusRegisterType.HoldingRegister]
+    }
+} 
 

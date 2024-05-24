@@ -1,17 +1,13 @@
 import { Converter } from "./converter";
-import { Ientity, ModbusFunctionCodes, Ispecification, getSpecificationI18nEntityOptionName, getSpecificationI18nEntityOptionId, IselectOption, Iselect } from 'specification.shared';
+import { Ientity, Ispecification, getSpecificationI18nEntityOptionName, getSpecificationI18nEntityOptionId, IselectOption, Iselect, ModbusRegisterType, Converters } from 'specification.shared';
 import { LogLevelEnum, Logger } from "./log";
 import { ReadRegisterResult } from "./converter";
 
 const log = new Logger('selectconverter')
 export class SelectConverter extends Converter {
     length: number = 1;
-    override isReadOnly(): boolean {
-        if (this.component === "button" || this.component === "select")
-            return false;
-        return true;
-    }
-    constructor(private mqttdiscoverylanguage:string,component?: string) {
+
+    constructor(private mqttdiscoverylanguage:string,component?: Converters) {
         if (!component)
             component = "select";
         super(component);
@@ -62,7 +58,7 @@ export class SelectConverter extends Converter {
         if (!entity)
             throw new Error("entity not found in entities")
 
-        if (this.component === "binary_sensor")
+        if (this.component === "binary")
             return {
                 data: [],
                 buffer: Buffer.from("")
@@ -87,30 +83,17 @@ export class SelectConverter extends Converter {
     }
     override getParameterType(_entity: Ientity): string | undefined {
         switch (this.component) {
-            case "binary_sensor":
+            case "binary":
                 return "Ibinary_sensor";
-            case "button":
-                return undefined;
-            default:
+              default:
                 return "Iselect";
         }
     }
 
-    override getModbusFunctionCodes(): ModbusFunctionCodes[] {
-        switch (this.component) {
-            case "binary_sensor":
-                return [ModbusFunctionCodes.readWriteHoldingRegisters,
-                ModbusFunctionCodes.readAnalogInputs,
-                ModbusFunctionCodes.readWriteCoils];
-            case "button":
-                return [ModbusFunctionCodes.readWriteHoldingRegisters,
-                ModbusFunctionCodes.readAnalogInputs,
-                ModbusFunctionCodes.readWriteCoils];
-            default:
-        }
-        return [ModbusFunctionCodes.readWriteHoldingRegisters,
-        ModbusFunctionCodes.readAnalogInputs,
-        ModbusFunctionCodes.readWriteCoils]
+    override getModbusRegisterTypes(): ModbusRegisterType[] {
+        return [ModbusRegisterType.HoldingRegister,
+            ModbusRegisterType.AnalogInputs,
+            ModbusRegisterType.Coils];
     }
 }
 

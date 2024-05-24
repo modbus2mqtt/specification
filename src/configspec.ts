@@ -3,7 +3,7 @@ import * as fs from 'fs';
 import * as path from 'path';
 import { join } from 'path';
 import { LogLevelEnum, Logger }from './log'
-import { EnumNumberFormat, FileLocation, IbaseSpecification, IimageAndDocumentUrl, ImodbusSpecification, Inumber, SPECIFICATION_VERSION, SpecificationFileUsage, SpecificationStatus, getSpecificationI18nName } from 'specification.shared';
+import { EnumNumberFormat, FileLocation, IbaseSpecification, IimageAndDocumentUrl, ImodbusSpecification, Inumber, ModbusRegisterType, SPECIFICATION_VERSION, SpecificationFileUsage, SpecificationStatus, getSpecificationI18nName } from 'specification.shared';
 import { getBaseFilename } from "specification.shared";
 import { IfileSpecification } from './ifilespecification';
 import { ConverterMap } from './convertermap';
@@ -191,22 +191,38 @@ export class ConfigSpecification {
             specFunction(spec);
         }
     }
-
-   
+    
+   static emptyTestData = {holdingRegisters:[],coils:[],analogInputs:[]}
     // removes non configuration data
     // Adds  testData array from Modbus values. They can be used to test specification
     static toFileSpecification(modbusSpec: ImodbusSpecification): IfileSpecification {
-        let fileSpec: IfileSpecification = { ...modbusSpec, version: SPECIFICATION_VERSION, testdata: [] }
+        let fileSpec: IfileSpecification = { ...modbusSpec, version: SPECIFICATION_VERSION, testdata: structuredClone(this.emptyTestData) }
         delete fileSpec['identification'];
         // delete (fileSpec as any)['status'];
-        fileSpec.testdata = [];
+        fileSpec.testdata = structuredClone(this.emptyTestData);
         modbusSpec.entities.forEach(entity => {
             if (entity.modbusValue)
                 for (let idx = 0; idx < entity.modbusValue.length; idx++){
-                 fileSpec.testdata.push({ address: M2mSpecification.getModbusAddressFCFromEntity(entity) + idx, value: entity.modbusValue[idx] })
-            }
-                     entity.converter.functionCodes = []
+                    switch( entity.registerType){
+                        case ModbusRegisterType.AnalogInputs:
+                            fileSpec.testdata.analogInputs?.push({ address: entity.modbusAddress + idx, value: entity.modbusValue[idx] })
+                            break;
+                        case ModbusRegisterType.HoldingRegister:
+                            fileSpec.testdata.holdingRegisters?.push({ address: entity.modbusAddress + idx, value: entity.modbusValue[idx] })
+                            break;                    
+                        case ModbusRegisterType.Coils:
+                            fileSpec.testdata.coils?.push({ address: entity.modbusAddress + idx, value: entity.modbusValue[idx] })
+                            break;
+                    }
+                     entity.converter.registerTypes = []
+                }
         })
+        if( fileSpec.testdata.analogInputs?.length == 0)
+            delete fileSpec.testdata.analogInputs
+        if( fileSpec.testdata.holdingRegisters?.length == 0)
+            delete fileSpec.testdata.holdingRegisters
+        if( fileSpec.testdata.coils?.length == 0)
+            delete fileSpec.testdata.coils
         fileSpec.entities.forEach(entity => {
             delete (entity as any)['modbusValue']
             delete (entity as any)['mqttValue']
@@ -401,7 +417,7 @@ export class ConfigSpecification {
             let rc: IfileSpecification = {
                 version: SPECIFICATION_VERSION,
                 entities: [], files: [], i18n: [],
-                testdata: [],
+                testdata: structuredClone(this.emptyTestData),
                 filename: "_new",
                 status: SpecificationStatus.new
             }
