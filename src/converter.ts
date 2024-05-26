@@ -12,8 +12,6 @@ export abstract class Converter {
     }
     getModbusLength(_entity: Ientity): number { return 1 }
 
-    //@ts-ignore
-    generateDiscoverData(entity: Ientity, device: Islave): Idiscover | undefined { return undefined; }
     abstract modbus2mqtt(spec: Ispecification, entityid: number, value: ReadRegisterResult): number | string;
     abstract mqtt2modbus(spec: Ispecification, entityid: number, _value: number | string):ReadRegisterResult
     // the following methods must work w/o meta data because they are needed for the converter ui

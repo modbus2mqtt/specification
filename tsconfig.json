@@ -29,8 +29,5 @@
     "node_modules/**/*",
     "dist/**/*",
     "**/__tests__/**",
-  ],
-  "paths":{
-    "specification/src/*": ["./src/*"]
-  }
+  ]
 }

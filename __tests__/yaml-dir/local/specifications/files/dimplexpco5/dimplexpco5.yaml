@@ -1,0 +1,127 @@
+identified: 1
+entities:
+  - id: 0
+    modbusAddress: 1
+    converter:
+      name: sensor
+      functionCodes: []
+    functionCode: 21
+    converterParameters:
+      multiplier: 0.1
+      offset: 0
+      numberFormat: 0
+      identification:
+        min: -20
+        max: 50
+    mqttname: outertemperature
+  - id: 1
+    modbusAddress: 174
+    converter:
+      name: sensor
+      functionCodes: []
+    functionCode: 21
+    converterParameters:
+      multiplier: 1
+      offset: 0
+      numberFormat: 0
+      identification:
+        min: 30
+        max: 70
+    mqttname: hotwatertargettemperature
+  - id: 2
+    modbusAddress: 3
+    converter:
+      name: sensor
+      functionCodes: []
+    functionCode: 21
+    converterParameters:
+      multiplier: 0.1
+      offset: 0
+      numberFormat: 0
+      identification:
+        min: 0
+        max: 70
+    mqttname: hotwatertemperature
+  - id: 3
+    modbusAddress: 11
+    converter:
+      name: sensor
+      functionCodes: []
+    functionCode: 21
+    converterParameters:
+      multiplier: 0.1
+      offset: 0
+      numberFormat: 0
+      identification:
+        min: 15
+        max: 30
+    mqttname: roomtemperature
+  - id: 4
+    modbusAddress: 46
+    converter:
+      name: sensor
+      functionCodes: []
+    functionCode: 21
+    converterParameters:
+      multiplier: 0.1
+      offset: 0
+      numberFormat: 0
+      identification:
+        min: 15
+        max: 30
+    mqttname: targetroomtemperature
+  - id: 5
+    modbusAddress: 47
+    converter:
+      name: sensor
+      functionCodes: []
+    functionCode: 21
+    converterParameters:
+      multiplier: 0.1
+      offset: 0
+      numberFormat: 0
+      identification:
+        min: 0.5
+        max: 5
+    mqttname: hysteresis
+  - id: 6
+    modbusAddress: 3
+    converter:
+      name: binary_sensor
+      functionCodes: []
+    functionCode: 20
+    converterParameters: {}
+    mqttname: externalloack
+i18n:
+  - lang: de
+    texts:
+      - textId: name
+        text: Dimplex PCO5
+      - textId: e0
+        text: Outer Temperature
+      - textId: e1
+        text: Hot Water Target Temperature
+      - textId: e2
+        text: Hot Water Temperature
+      - textId: e3
+        text: Room Temperature
+      - textId: e4
+        text: Target Room Temperature
+      - textId: e5
+        text: Hysteresis
+      - textId: e6
+        text: External Lock
+files:
+  - url: https://dimplex.atlassian.net/wiki/spaces/DW/pages/2862481429/Modbus+RTU+Anbindung
+    fileLocation: 1
+    usage: doc
+  - url: /specifications/files/dimplexpco5/IMG_1552.jpg
+    fileLocation: 0
+    usage: img
+filename: dimplexpco5
+status: 2
+icon: null
+model: null
+manufacturer: null
+version: "0.1"
+testdata: []

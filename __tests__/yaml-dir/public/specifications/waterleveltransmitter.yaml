@@ -33,7 +33,7 @@ i18n:
       - textId: e1
         text: Water Level Transmitter
 identified: -1
-version: "0.1"
+version: "0.2"
 testdata: 
   holdingRegisters:
     - address: 3

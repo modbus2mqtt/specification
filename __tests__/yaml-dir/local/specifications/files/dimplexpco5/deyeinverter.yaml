@@ -1,0 +1,63 @@
+identified: 0
+entities:
+  - id: 0
+    modbusAddress: 1
+    converter:
+      name: sensor
+      functionCodes: []
+    functionCode: 21
+    converterParameters:
+      multiplier: 1
+      offset: 0
+      numberFormat: 0
+      identification:
+        min: 1
+        max: 255
+    mqttname: slaveid
+  - id: 1
+    modbusAddress: 125
+    converter:
+      name: number
+      functionCodes: []
+    functionCode: 21
+    converterParameters:
+      multiplier: 1
+      offset: 0
+      numberFormat: 0
+    mqttname: rwtest
+  - id: 2
+    modbusAddress: 3
+    converter:
+      name: text_sensor
+      functionCodes: []
+    functionCode: 21
+    converterParameters:
+      stringlength: 10
+      identification: "[0-9]+"
+    mqttname: serialnumber
+i18n:
+  - lang: de
+    texts:
+      - textId: name
+        text: Deye Inverter
+      - textId: e0
+        text: slaveid
+      - textId: e1
+        text: RWTest
+      - textId: e2
+        text: Serial Number
+files:
+  - url: /specifications/files/deyeinverter/Bildschirmfoto vom 2022-09-27
+      11-58-46.png
+    fileLocation: 0
+    usage: img
+  - url: /specifications/files/deyeinverter/DeyeModbus.pdf
+    fileLocation: 0
+    usage: doc
+filename: deyeinverter
+status: 2
+icon: null
+model: null
+manufacturer: null
+version: "0.1"
+testdata: []

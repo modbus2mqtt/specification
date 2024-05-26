@@ -8,6 +8,7 @@ import { getBaseFilename } from "specification.shared";
 import { IfileSpecification } from './ifilespecification';
 import { ConverterMap } from './convertermap';
 import { M2mSpecification } from './m2mspecification';
+import { Migrator } from './migrator';
 
 declare global {
     namespace NodeJS {
@@ -118,6 +119,10 @@ export class ConfigSpecification {
                     let newfn = file.replace(".yaml", "");
                     var src: string = fs.readFileSync(directory + "/" + file, { encoding: 'utf8' });
                     var o: IfileSpecification = parse(src);
+                    if (o.version != SPECIFICATION_VERSION ){
+                        o = new Migrator().migrate(o)
+                    }
+
                     o.filename = newfn;
                     this.readFilesYaml(directory, o)
                     o.entities.forEach(entity => {
