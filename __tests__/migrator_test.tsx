@@ -2,6 +2,7 @@
 import { expect } from '@jest/globals';
 import { ConfigSpecification } from '../src/configspec';
 import { yamlDir } from './configsbase';
+import { SPECIFICATION_VERSION } from 'specification.shared';
 
 
 ConfigSpecification['yamlDir'] = yamlDir;
@@ -20,6 +21,7 @@ it('check device type status', () => {
     expect( spec?.testdata.analogInputs).toBeUndefined()
     expect(spec?.testdata.coils?.length).toBeGreaterThan(0)
     expect(spec?.testdata.holdingRegisters?.length).toBeGreaterThan(0)
+    expect(spec?.version).toBe(SPECIFICATION_VERSION)
     
 
  });

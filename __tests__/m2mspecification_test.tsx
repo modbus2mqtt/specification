@@ -1,9 +1,10 @@
-import { FileLocation, ImodbusEntity, Itext, MessageTypes, ModbusRegisterType, SpecificationFileUsage } from  'specification.shared';
+import { FileLocation, ImodbusEntity, Itext, MessageTypes, ModbusRegisterType, SPECIFICATION_VERSION, SpecificationFileUsage } from  'specification.shared';
 import { ConfigSpecification } from '../src/configspec';
 import { ImodbusValues, M2mSpecification, emptyModbusValues } from '../src/m2mspecification';
 import { Converters, IdentifiedStates, ImodbusSpecification } from 'specification.shared';
 import { yamlDir } from './configsbase';
 import { ReadRegisterResult } from '../src/converter';
+import { IfileSpecification } from '../src/ifilespecification';
 
 ConfigSpecification['yamlDir'] = yamlDir;
 beforeAll(() => {
@@ -19,16 +20,16 @@ var entText: ImodbusEntity = {
     converter: { name: "text", registerTypes: [] }
 };
 
-let spec: ImodbusSpecification = {
+let spec: IfileSpecification = {
     "entities": [
         {
             "id": 1, mqttname: "mqtt",
-            "converter": { name: "sensor" as Converters, registerTypes: [] }, "modbusAddress": 3, registerType: ModbusRegisterType.HoldingRegister,readonly:true, "icon": "", modbusValue: [2], mqttValue: "1", identified: IdentifiedStates.identified, "converterParameters": { "multiplier": 0.1, "offset": 0, "uom": "cm", "identification": { "min": 0, "max": 200 } }
+            "converter": { name: "sensor" as Converters, registerTypes: [] }, "modbusAddress": 3, registerType: ModbusRegisterType.HoldingRegister,readonly:true, "icon": "",  "converterParameters": { "multiplier": 0.1, "offset": 0, "uom": "cm", "identification": { "min": 0, "max": 200 } }
         },
-        { id: 2, mqttname: "mqtt2", "converter": { name: "select" as Converters, registerTypes: [] }, "modbusAddress": 4, registerType: ModbusRegisterType.HoldingRegister,readonly:true, "icon": "", modbusValue: [1], mqttValue: "1", identified: IdentifiedStates.identified, "converterParameters": { "optionModbusValues": [1, 2, 3] } },
-        { id: 3, mqttname: "mqtt3", "converter": { name: "select" as Converters, registerTypes: [] }, "modbusAddress": 5, registerType: ModbusRegisterType.HoldingRegister,readonly:false, "icon": "", modbusValue: [1], mqttValue: "1", identified: IdentifiedStates.identified, "converterParameters": { "optionModbusValues": [0, 1, 2, 3] } }],
+        { id: 2, mqttname: "mqtt2", "converter": { name: "select" as Converters, registerTypes: [] }, "modbusAddress": 4, registerType: ModbusRegisterType.HoldingRegister,readonly:true, "icon": "",  "converterParameters": { "optionModbusValues": [1, 2, 3] } },
+        { id: 3, mqttname: "mqtt3", "converter": { name: "select" as Converters, registerTypes: [] }, "modbusAddress": 5, registerType: ModbusRegisterType.HoldingRegister,readonly:false, "icon": "",  "converterParameters": { "optionModbusValues": [0, 1, 2, 3] } }],
     "status": 2, "manufacturer": "unknown", "model": "QDY30A",
-    "filename": "waterleveltransmitter_test",
+    "filename": "waterleveltransmitter_validate",
     i18n: [
         {
             lang: "en", texts: [
@@ -45,7 +46,15 @@ let spec: ImodbusSpecification = {
     files: [{ url:"test", usage:SpecificationFileUsage.documentation, fileLocation: FileLocation.Local},
             { url:"test1", usage:SpecificationFileUsage.img, fileLocation: FileLocation.Local},
     ],
-    identified: IdentifiedStates.identified
+    version:SPECIFICATION_VERSION,
+    testdata: {
+        holdingRegisters: [
+            {address:3, value: 1},
+            {address:4, value: 1},
+            {address:5, value: 1},
+            {address:100, value:null}
+        ]
+    }
 }
 it("copyModbusDataToEntity  identifiation string identified",()=>{
     M2mSpecification.setMqttdiscoverylanguage("en")
@@ -92,10 +101,22 @@ it("validation: readWrite FunctionCode instead of read", () => {
 })
 it("validation: Find no specification for the given test data", () => {
     let tspec = structuredClone(spec)
-    tspec.entities[0].registerType = ModbusRegisterType.AnalogInputs
-    let mspec = new M2mSpecification(structuredClone(tspec))
+    tspec!.entities[0].registerType = ModbusRegisterType.AnalogInputs
+    tspec.testdata.holdingRegisters!.splice(0,1)
+    tspec.testdata.analogInputs = [{address:3, value: 1}]
+    let mspec = new M2mSpecification(tspec)
     let msgs = mspec.validate("en")
     let count = 0
     msgs.forEach(msg => { if (msg.type == MessageTypes.identifiedByOthers && msg.additionalInformation.length == 1) count++ })
     expect(count).toBe(0)
+})
+it("validation: Find no specification null values don't match", () => {
+    let tspec = structuredClone(spec)
+    tspec.testdata.holdingRegisters![3].value = 100
+  
+    let mspec = new M2mSpecification(tspec)
+    let msgs = mspec.validate("en")
+    let count = 0
+    msgs.forEach(msg => { if (msg.type == MessageTypes.identifiedByOthers && msg.additionalInformation.length == 1) count++ })
+    expect(count).toBe(1)
 })

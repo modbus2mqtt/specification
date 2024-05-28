@@ -22,18 +22,21 @@ export class Migrator {
   constructor(){}
   migrate(filecontent:any):IfileSpecification {
     let rc:IfileSpecification
-    console.log("Migration:" + filecontent.version)
+    
+    log.log(LogLevelEnum.notice, "Migration:" + filecontent.version)
     if(filecontent.version != undefined)
     switch(filecontent.version){
         case "0.1":
             return this.migrate0_1to0_2(filecontent)
+            
             break;
             case SPECIFICATION_VERSION:
                 return filecontent
         default:
-           log.log(LogLevelEnum.error , "Specification Version " + filecontent.version + " is unknown") 
+           log.log(LogLevelEnum.error , "Migration: Specification Version " + filecontent.version + " is unknown") 
            throw new Error("Specification Version " + filecontent.version + " is unknown");
     }
+    
     return filecontent;
   }
   private fc2registerType(functioncode:number):{ registerType:ModbusRegisterType, readonly:boolean}|undefined
@@ -80,6 +83,7 @@ return undefined;
   }
   
   migrate0_1to0_2(filecontent: any):IfileSpecification {
+    filecontent.version = SPECIFICATION_VERSION
     // functioncode to registerType
     if(filecontent.entities)
     filecontent.entities.forEach( (entity:any)=>{

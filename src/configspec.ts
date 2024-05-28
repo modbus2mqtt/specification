@@ -5,7 +5,7 @@ import { join } from 'path';
 import { LogLevelEnum, Logger }from './log'
 import { EnumNumberFormat, FileLocation, IbaseSpecification, IimageAndDocumentUrl, ImodbusSpecification, Inumber, ModbusRegisterType, SPECIFICATION_VERSION, SpecificationFileUsage, SpecificationStatus, getSpecificationI18nName } from 'specification.shared';
 import { getBaseFilename } from "specification.shared";
-import { IfileSpecification } from './ifilespecification';
+import { IModbusData, IfileSpecification } from './ifilespecification';
 import { ConverterMap } from './convertermap';
 import { M2mSpecification } from './m2mspecification';
 import { Migrator } from './migrator';
@@ -200,11 +200,11 @@ export class ConfigSpecification {
    static emptyTestData = {holdingRegisters:[],coils:[],analogInputs:[]}
     // removes non configuration data
     // Adds  testData array from Modbus values. They can be used to test specification
-    static toFileSpecification(modbusSpec: ImodbusSpecification): IfileSpecification {
+    static toFileSpecification(modbusSpec: ImodbusSpecification, testdata:IModbusData =this.emptyTestData): IfileSpecification {
         let fileSpec: IfileSpecification = { ...modbusSpec, version: SPECIFICATION_VERSION, testdata: structuredClone(this.emptyTestData) }
         delete fileSpec['identification'];
         // delete (fileSpec as any)['status'];
-        fileSpec.testdata = structuredClone(this.emptyTestData);
+        fileSpec.testdata = testdata;
         modbusSpec.entities.forEach(entity => {
             if (entity.modbusValue)
                 for (let idx = 0; idx < entity.modbusValue.length; idx++){
@@ -388,9 +388,9 @@ export class ConfigSpecification {
             ConfigSpecification.specifications.push(spec);
         return spec;
     }
-    writeSpecification(spec: ImodbusSpecification, onAfterSave:(filename:string)=>void, originalFilename: string | null): IfileSpecification {
-        let fileSpec: IfileSpecification = ConfigSpecification.toFileSpecification(spec)
-        this.writeSpecificationFromFileSpec(fileSpec, originalFilename)
+    writeSpecification(spec: ImodbusSpecification, testdata:IModbusData, onAfterSave:(filename:string)=>void, originalFilename: string | null): IfileSpecification {
+        let fileSpec: IfileSpecification = ConfigSpecification.toFileSpecification(spec,testdata)
+        this.writeSpecificationFromFileSpec(fileSpec,originalFilename)
         onAfterSave(fileSpec.filename)
         return fileSpec;
     }

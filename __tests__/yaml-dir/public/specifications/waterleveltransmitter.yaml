@@ -38,3 +38,7 @@ testdata:
   holdingRegisters:
     - address: 3
       value: 2
+    - address: 4
+      value: 2
+    - address: 100
+      value: null

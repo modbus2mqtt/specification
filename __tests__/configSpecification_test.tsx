@@ -4,11 +4,15 @@ import * as fs from 'fs';
 import { join } from 'path';
 import { yamlDir } from './configsbase';
 import { SpecificationFileUsage, SpecificationStatus, getFileNameFromName, getSpecificationI18nName, newSpecification } from 'specification.shared';
+import { emptyModbusValues } from '../src/m2mspecification';
+import { IModbusData } from '../src/ifilespecification';
 
 
 ConfigSpecification['yamlDir'] = yamlDir;
 
-
+let testdata:IModbusData = {coils: [],
+    holdingRegisters: [],
+    analogInputs: []}
 const hostInfo: string = '{"result": "ok", "data": \
 {"devices": [ \
     {"name": "fb1", "sysfs": "/sys/devices/platform/3eaf0000.framebuffer/graphics/fb1", "dev_path": "/dev/fb1", "subsystem": "graphics", \
@@ -76,7 +80,8 @@ it('add new specification, add files, set filename', () => {
     cfgSpec.appendSpecificationFile(spec.filename, "test.jpg",SpecificationFileUsage.img)
     mspec.filename = "addspectest"
     let wasCalled= false
-    cfgSpec.writeSpecification(mspec, (filename)=>{
+    
+    cfgSpec.writeSpecification(mspec, testdata,(filename)=>{
         expect(filename).toBe(mspec.filename)
         wasCalled = true
     }, null)
@@ -87,7 +92,7 @@ it('add new specification, add files, set filename', () => {
     expect(g!.files.length).toBe(2)
     spec.filename = "modifiedfilename"
     wasCalled= false
-    cfgSpec.writeSpecification(mspec, (filename)=>{
+    cfgSpec.writeSpecification(mspec, testdata,(filename)=>{
         expect(filename).toBe(mspec.filename)
         wasCalled = true
     }, null)

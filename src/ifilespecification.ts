@@ -1,7 +1,7 @@
 import { Ispecification } from "specification.shared";
 export interface Idata {
     address:number,
-    value:number,
+    value:number|null,
 }
 export interface IModbusData {
     coils?: Idata[],
