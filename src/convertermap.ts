@@ -5,14 +5,12 @@ import { SelectConverter } from "./selectConverter";
 import { ValueConverter } from "./valueconverter";
 import { Ientity, Iconverter, Converters } from 'specification.shared';
 import { BinaryConverter } from "./binaryConverter";
+import { ConfigSpecification } from "./configspec";
 
 export class ConverterMap extends Map<Converters, Converter> {
     private static converterMap = new ConverterMap();
     private static getConverterMap(): ConverterMap { return ConverterMap.converterMap; }
-    private static mqttdiscoveryLanguage:string;
-    static setMqttDiscoveryLanguage(lang:string){
-        ConverterMap.mqttdiscoveryLanguage = lang;
-    }
+    
     static getConverters(): Iconverter[] {
         let rc: Iconverter[] = []
         ConverterMap.getConverterMap().forEach((con, name) => {
@@ -59,7 +57,7 @@ export class ConverterMap extends Map<Converters, Converter> {
         if (ConverterMap.converterMap.size == 0) {
             // read/write not a sensor
             ConverterMap.converterMap.set("number", new NumberConverter());
-            ConverterMap.converterMap.set("select", new SelectConverter(ConverterMap.mqttdiscoveryLanguage));
+            ConverterMap.converterMap.set("select", new SelectConverter());
             ConverterMap.converterMap.set("text", new TextConverter());
             ConverterMap.converterMap.set("binary", new BinaryConverter());
             ConverterMap.converterMap.set("value", new ValueConverter());

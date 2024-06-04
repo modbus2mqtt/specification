@@ -8,7 +8,7 @@ import * as fs from 'fs';
 import { M2mGitHub, githubPublicNames } from "./m2mgithub";
 let path = require("path");
 
-const debug = require('debug')('m2mgithub');
+const debug = require('debug')('m2mgithubvalidate');
 export interface IpullRequest {
     files:string[],
     merged:boolean,
@@ -51,6 +51,7 @@ export class M2mGithubValidate extends M2mGitHub{
             repo: githubPublicNames.modbus2mqttRepo,
             pull_number: pullNumber
         }).then( pull=>{
+            debug("listFiles")
             this.octokit.pulls.listFiles({
                 owner: githubPublicNames.publicModbus2mqttOwner,
                 repo: githubPublicNames.modbus2mqttRepo,
@@ -63,6 +64,7 @@ export class M2mGithubValidate extends M2mGitHub{
                     filePromises.push(this.downloadFile(file.sha,file.filename))
                 })
                 Promise.all(filePromises).then(()=>{
+                    debug("success")
                     let pr:IpullRequest    = {
                      merged: pull.data.merged,
                      closed: pull.data.closed_at != null,
@@ -70,10 +72,20 @@ export class M2mGithubValidate extends M2mGitHub{
                      files:  f          
                     }  
                     resolve(pr)              
-                }).catch(e=>{ if( e.step == undefined) e.step="downloadFile"
+                }).catch(e=>{ 
+                    if( e.step == undefined) e.step="downloadFile"
+                    debug( JSON.stringify(e))
                     reject(e)
                 })
+            }).catch(e=>{ 
+                if( e.step == undefined) e.step="listFiles"
+                debug( JSON.stringify(e))
+                reject(e)
             })
+        }).catch(e=>{ 
+            if( e.step == undefined) e.step="getPull"
+            debug( JSON.stringify(e))
+            reject(e)
         })
     })
     }

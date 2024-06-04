@@ -271,6 +271,7 @@ export class M2mGitHub {
                 debug("start committing")
                 let all: Promise<ITreeParam>[] = []
                 files.forEach(file => {
+                    debug( "root: " + root + " file: " + file)
                     all.push(this.uploadFileAndCreateTreeParameter(root, file))
                 })
                 Promise.all(all).then(trees => {

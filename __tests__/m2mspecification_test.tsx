@@ -5,7 +5,7 @@ import { Converters, IdentifiedStates, ImodbusSpecification } from 'specificatio
 import { yamlDir } from './configsbase';
 import { ReadRegisterResult } from '../src/converter';
 import { IfileSpecification } from '../src/ifilespecification';
-
+import { it,expect, beforeAll} from '@jest/globals';
 ConfigSpecification['yamlDir'] = yamlDir;
 beforeAll(() => {
     new ConfigSpecification().readYaml()
@@ -57,7 +57,7 @@ let spec: IfileSpecification = {
     }
 }
 it("copyModbusDataToEntity  identifiation string identified",()=>{
-    M2mSpecification.setMqttdiscoverylanguage("en")
+    ConfigSpecification.setMqttdiscoverylanguage("en", undefined)
     let tspec = structuredClone(spec)
     tspec.entities = [entText]
     let values:ImodbusValues = emptyModbusValues()
@@ -80,7 +80,7 @@ it("copyModbusDataToEntity  identifiation string identified",()=>{
 })
 it("validation: Find a specification for the given test data", () => {
     let tspec = structuredClone(spec)
-    M2mSpecification.setMqttdiscoverylanguage("en")
+    ConfigSpecification.setMqttdiscoverylanguage("en", undefined)
     let mspec = new M2mSpecification(tspec)
     let msgs = mspec.validate("en")
     let count = 0
@@ -89,7 +89,7 @@ it("validation: Find a specification for the given test data", () => {
     count = 0
 })
 it("validation: readWrite FunctionCode instead of read", () => {
-    M2mSpecification.setMqttdiscoverylanguage("en")
+    ConfigSpecification.setMqttdiscoverylanguage("en", undefined)
     let tspec = structuredClone(spec)
     tspec.entities[0].registerType = ModbusRegisterType.HoldingRegister
     tspec.entities[0].readonly = false

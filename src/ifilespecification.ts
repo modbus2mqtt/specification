@@ -11,6 +11,6 @@ export interface IModbusData {
 export interface IfileSpecification extends Ispecification {
     version: string;
     publicSpecification?: IfileSpecification; // used to compare cloned or contributed with public specs on the angular client.
-   
+    pullNumber?: number
     testdata: IModbusData
 }

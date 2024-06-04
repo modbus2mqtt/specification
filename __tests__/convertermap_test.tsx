@@ -1,7 +1,9 @@
-import { expect } from '@jest/globals';
 import { ConverterMap } from '../src/convertermap';
 import { Converters, Ientity, Ispecification, ModbusRegisterType } from 'specification.shared';
-ConverterMap.setMqttDiscoveryLanguage("en")
+import { ConfigSpecification } from '../src/configspec';
+import { it,expect, beforeAll} from '@jest/globals';
+
+ConfigSpecification.setMqttdiscoverylanguage("en", undefined)
 function getReadRegisterResult(n: number): any {
     let one: any = {
         data: [n],

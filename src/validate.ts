@@ -7,6 +7,8 @@ import { M2mGithubValidate } from "./m2mGithubValidate";
 import { join } from "path";
 import path = require("path");
 import { M2mSpecification } from "./m2mspecification";
+const debug = require('debug')('validate');
+
 declare global {
     namespace NodeJS {
         interface ProcessEnv {
@@ -47,7 +49,7 @@ if( ! fs.existsSync(yamlDir))
     //     move contributed to local
     //  delete branch
     //  sync public directory
-let gh = new M2mGithubValidate(process.env.GITHUB_TOKEN,join(yamlDir,"public"))
+let gh = new M2mGithubValidate(process.env.GITHUB_TOKEN,yamlDir)
  gh.init().then(()=>{
     if(process.env.PR_NUMBER == undefined){
         log.log(LogLevelEnum.error, "No Pull Request Number passed to environment variable ")
@@ -56,9 +58,11 @@ let gh = new M2mGithubValidate(process.env.GITHUB_TOKEN,join(yamlDir,"public"))
     let pullNumber = Number.parseInt(process.env.PR_NUMBER)
     gh.getPullRequest(pullNumber).then( pr=>{
         let specname:string|undefined
+        debug("getPullRequest finished")
         pr.files.forEach(file=>{
-            if( file.endsWith(".yaml")&& -1 == file.indexOf("/files/")){
+            if( file.endsWith(".yaml")&& -1 == file.indexOf("/files.yaml")){
                 specname = path.parse(file).name
+                debug("specname file exists" + specname + "=" + file)
             }
         })
         if( specname != undefined)
@@ -76,14 +80,19 @@ let gh = new M2mGithubValidate(process.env.GITHUB_TOKEN,join(yamlDir,"public"))
                     }else{
                         let m:string=""
                         messages.forEach(msg=>{
+                            debug(JSON.stringify(msg))
                         })
-                        log.log(LogLevelEnum.error, "specification is not valid " + specname)
-                        process.exit(3)
+                        let errors = m2mSpec.messages2Text(messages)
+                        log.log(LogLevelEnum.error, "specification is not valid " + specname + "Proceed manually")
+                        gh.addIssueComment(pullNumber, "**$${\\color{red}Proceed\\space manually}$$**\nSpecification '" + specname +
+                            "' is not valid.\n" + errors).then(()=>{
+                            process.exit(3)
+                        }).catch(e=>{log.log(LogLevelEnum.error, e.message); process.exit(5)}) 
                     }
                 }else log.log(LogLevelEnum.error, "specification not found in yaml directory " + specname)
                 
             }else {
-                gh.addIssueComment(pullNumber, "specification not found in pull request: Proceed manually " + specname).then(()=>{
+                gh.addIssueComment(pullNumber, "**$${\\color{red}Proceed\\space manually}$$**\nSpecification '" + specname + "' not found in pull request" ).then(()=>{
                     process.exit(4)
                 }).catch(e=>{log.log(LogLevelEnum.error, e.message); process.exit(5)}) 
             }

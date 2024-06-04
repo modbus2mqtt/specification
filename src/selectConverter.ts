@@ -2,19 +2,19 @@ import { Converter } from "./converter";
 import { Ientity, Ispecification, getSpecificationI18nEntityOptionName, getSpecificationI18nEntityOptionId, IselectOption, Iselect, ModbusRegisterType, Converters } from 'specification.shared';
 import { LogLevelEnum, Logger } from "./log";
 import { ReadRegisterResult } from "./converter";
+import { ConfigSpecification } from "./configspec";
 
 const log = new Logger('selectconverter')
 export class SelectConverter extends Converter {
     length: number = 1;
 
-    constructor(private mqttdiscoverylanguage:string,component?: Converters) {
+    constructor(component?: Converters) {
         if (!component)
             component = "select";
         super(component);
     }
     private getOptions(spec: Ispecification, entityid: number): IselectOption[] {
         let entity = spec.entities.find(e => e.id == entityid)
-        let mqttdiscoverylanguage = this.mqttdiscoverylanguage
         if (entity && entity.converterParameters) {
             if ("options" in entity.converterParameters && entity.converterParameters.options) {
                 return entity.converterParameters.options
@@ -23,7 +23,7 @@ export class SelectConverter extends Converter {
                 if ("optionModbusValues" in entity.converterParameters && entity.converterParameters.optionModbusValues) {
                     let options: IselectOption[] = []
                     entity.converterParameters.optionModbusValues.forEach(option => {
-                        let name = getSpecificationI18nEntityOptionName(spec, mqttdiscoverylanguage, entityid, option)
+                        let name = getSpecificationI18nEntityOptionName(spec, ConfigSpecification.mqttdiscoverylanguage!, entityid, option)
                         options.push({ key: option, name: name ? name : "" })
                     })
                     return options;
@@ -42,7 +42,7 @@ export class SelectConverter extends Converter {
                 return opt && opt.name ? opt.name : ""
             }
             else {
-                var rc = getSpecificationI18nEntityOptionName(spec, this.mqttdiscoverylanguage, entityid, value.data[0])
+                var rc = getSpecificationI18nEntityOptionName(spec, ConfigSpecification.mqttdiscoverylanguage!, entityid, value.data[0])
                 if (rc)
                     return rc;
             }
@@ -63,7 +63,7 @@ export class SelectConverter extends Converter {
                 data: [],
                 buffer: Buffer.from("")
             }
-        let val = getSpecificationI18nEntityOptionId(spec, this.mqttdiscoverylanguage, entityid, name);
+        let val = getSpecificationI18nEntityOptionId(spec, ConfigSpecification.mqttdiscoverylanguage!, entityid, name);
         if (val) {
             let buf = Buffer.alloc(2)
             buf.writeInt16BE(val[0])

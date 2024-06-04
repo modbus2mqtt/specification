@@ -1,6 +1,6 @@
 
 
-import { IspecificationValidator } from "./ispecificationvalidator";
+import { IspecificationValidator, IvalidateIdentificationResult } from "./ispecificationvalidator";
 import { IspecificationContributor } from "./ispecificationContributor";
 let  JSZip = require("jszip");
 let path = require("path");
@@ -15,7 +15,8 @@ import { ConfigSpecification } from "./configspec";
 import { ConverterMap } from "./convertermap";
 import { LogLevelEnum, Logger } from "./log";
 
-const log = new Logger('selectconverter')
+const log = new Logger('m2mSpecification')
+const debug = require('debug')('m2mspecification');
 
 const maxIdentifiedSpecs = 0
 export interface ImodbusValues {
@@ -33,14 +34,7 @@ export function emptyModbusValues():ImodbusValues  {
 export class M2mSpecification  implements IspecificationValidator, IspecificationContributor {
     private differentFilename = false
     private notBackwardCompatible = false
-    static mqttdiscoverylanguage:string
-    static githubPersonalToken:string
-    static setMqttdiscoverylanguage(lang:string){
-        M2mSpecification.mqttdiscoverylanguage = lang
-    }
-    static setGgithubPersonalToken(token:string){
-        M2mSpecification.githubPersonalToken = token
-    }
+
     constructor(private settings: Ispecification|ImodbusEntity[]) {
         {
             if (!(this.settings as ImodbusSpecification).i18n) {
@@ -55,26 +49,33 @@ export class M2mSpecification  implements IspecificationValidator, Ispecificatio
             }
         }
     }
+     messages2Text(msgs: Imessage[]):string{
+          let errors:string=""      
+        msgs.forEach(msg => {
+            if (msg.type != MessageTypes.identifiedByOthers)
+                errors += this.getMessageString(msg) + "\n"
+        })
+        return errors
+    }
     contribute(note: string | undefined): Promise<number> {
         return new Promise<number>((resolve, reject) => {
             try {
-                let language = M2mSpecification.mqttdiscoverylanguage
-                let messages = this.validate(language)
+                let language = ConfigSpecification.mqttdiscoverylanguage
+                let messages:Imessage[] = []
+               
+                if(language == undefined)
+                    messages.push({type:MessageTypes.noMqttDiscoveryLanguage, category: MessageCategories.configuration })
+                else
+                    messages = this.validate(language)
                 let warnings: Imessage[] = []
-                let errors: string = ""
-                messages.forEach(msg => {
-                    if (msg.type == MessageTypes.identifiedByOthers)
-                        warnings.push(msg)
-                    else {
-                        errors += this.getMessageString(msg) + "\n"
-                    }
-                })
-                if (messages.length > warnings.length) {
+                let errors: string = this.messages2Text(messages)
+
+                if (errors.length >0 ) {
 
                     throw new Error("Validation failed with errors: " + errors)
                 }
 
-                if (warnings.length > 0 && (!note || note.length == 0))
+                if (errors.length == 0 && messages.length>0 && (!note || note.length == 0))
                     throw new Error("Validation failed with warning, but no note text available")
                 let fileList = this.getSpecificationsFilesList()
                 let spec = this.settings as IbaseSpecification
@@ -95,19 +96,20 @@ export class M2mSpecification  implements IspecificationValidator, Ispecificatio
                         message = this.generateClonedContributionMessage(note, pub)
                         break;
                 }
-                title = title + getSpecificationI18nName(spec, language)
-                if (M2mSpecification.githubPersonalToken && M2mSpecification.githubPersonalToken.length) {
-                    let github = new M2mGitHub(M2mSpecification.githubPersonalToken, ConfigSpecification.getPublicDir())
+                title = title + getSpecificationI18nName(spec, language!)
+                if (ConfigSpecification.githubPersonalToken && ConfigSpecification.githubPersonalToken.length) {
+                    let github = new M2mGitHub(ConfigSpecification.githubPersonalToken, ConfigSpecification.getPublicDir())
                     github.init().then(() => {
                         github.commitFiles(ConfigSpecification.getLocalDir(), spec.filename, fileList, title, message).then((sha) => {
 
                             github.createPullrequest(title, message, spec.filename).then(issue => {
-                                new ConfigSpecification().changeContributionStatus((this.settings as IbaseSpecification).filename, SpecificationStatus.contributed)
+                                new ConfigSpecification().changeContributionStatus((this.settings as IbaseSpecification).filename, SpecificationStatus.contributed,issue)
                                 resolve(issue)
                             }).catch(reject)
                         }).catch(reject)
                     }).catch(reject)
                 }
+                else throw new Error("Github connection is not configured. Set Github Personal Acces Token in configuration UI first")
             }
             catch (e) {
                 reject(e)
@@ -166,8 +168,23 @@ export class M2mSpecification  implements IspecificationValidator, Ispecificatio
         }
         return rcmessage;
     }
-    private getMessageString(message: Imessage): string {
+     getMessageString(message: Imessage): string {
         switch (message.type) {
+                case MessageTypes.noDocumentation: return (`No documenation file or URL`);
+                case MessageTypes.nameTextMissing: return (`The specification has no Name`);
+                case MessageTypes.entityTextMissing: return `entity has no name`
+                case MessageTypes.translationMissing: return (`A translation is missing` + ": " + message.additionalInformation);
+                case MessageTypes.noEntity: return (`No entity defined for this specification`);
+                case MessageTypes.noDocumentation: return (`No dcoumenation file or URL`);
+                case MessageTypes.noImage: return (`No image file or URL`);
+                case MessageTypes.nonUniqueName: return (`Specification name is not unique`);
+                case MessageTypes.identifiedByOthers: {
+                    let specNames: string = ""
+                    message.additionalInformation.forEach((name: string) => { specNames = specNames + name + " " })
+                    return (`Test data of this specification matches to the following other public specifications ${specNames}`);
+                }
+                case MessageTypes.nonUniqueName: return (` The name is already available in public ` + ": " + message.additionalInformation)
+                case MessageTypes.notIdentified: return (` The specification can not be identified with it's test data`)
             case MessageTypes.differentFilename:
                 this.differentFilename = true
                 return this.getMessageLocal(message, "Filename has been changed. A new public specification will be created")
@@ -213,6 +230,9 @@ export class M2mSpecification  implements IspecificationValidator, Ispecificatio
                 return this.getMessageLocal(message, "Model has been changed")
             case MessageTypes.differentTranslation:
                 return this.getMessageLocal(message, "Translation has been changed")
+
+            case MessageTypes.noMqttDiscoveryLanguage:
+                return this.getMessageLocal(message, "MQTT Discovery Langauge is not configured")
         }
         return "unknown MessageType : " + message.type
     }
@@ -234,7 +254,7 @@ export class M2mSpecification  implements IspecificationValidator, Ispecificatio
         let spec = this.settings as IbaseSpecification
         spec.files.forEach(fs => {
             if (fs.fileLocation == FileLocation.Local)
-                files.push(join(fs.url.replace(/^\//g, "")))
+                files.push(fs.url.replace(/^\//g, ""))
         })
         if (files.length > 0) {
             let p = path.dirname(files[0])
@@ -263,7 +283,10 @@ export class M2mSpecification  implements IspecificationValidator, Ispecificatio
 
         if (!this.validateUniqueName(language))
             rc.push({ type: MessageTypes.nonUniqueName, category: MessageCategories.validateSpecification })
-        if ((this.settings as ImodbusSpecification).identified != IdentifiedStates.identified)
+        let mSpec = M2mSpecification.fileToModbusSpecification(this.settings as IfileSpecification)
+        if( mSpec.identified != undefined)
+            mSpec = M2mSpecification.fileToModbusSpecification(this.settings as IfileSpecification)
+        if (mSpec.identified != IdentifiedStates.identified)
             rc.push({ type: MessageTypes.notIdentified, category: MessageCategories.validateSpecification })
         return rc;
     }
@@ -426,8 +449,8 @@ export class M2mSpecification  implements IspecificationValidator, Ispecificatio
     }
 
 
-    validateIdentification(language: string): string[] {
-        let identifiedSpecs: string[] = [];
+    validateIdentification(language: string):IvalidateIdentificationResult[] {
+        let identifiedSpecs: IvalidateIdentificationResult[] = [];
         let values = emptyModbusValues()
         let fSettings: IfileSpecification
         if ((this.settings as IfileSpecification).testdata)
@@ -469,16 +492,19 @@ export class M2mSpecification  implements IspecificationValidator, Ispecificatio
                         else
                             log.log(LogLevelEnum.error, "Cloned Specification with no public Specification " + spec.filename )
                         break;
-
+                    default:
+                            mSpec = M2mSpecification.fileToModbusSpecification(fSpec, values)
                 }
                 let specName = getSpecificationI18nName(spec, language)
                 if (fSettings.filename != spec.filename){
                     let allMatch = this.allNullValuesMatch(spec,values)
                     if (allMatch && mSpec && mSpec.identified == IdentifiedStates.identified ) {
+
+                        let ent = mSpec.entities.find(ent=>ent.identified == IdentifiedStates.notIdentified)
                         if (specName)
-                            identifiedSpecs.push(specName)
+                            identifiedSpecs.push({specname: specName, referencedEntity: ent?.id})
                         else
-                            identifiedSpecs.push("unknown")
+                            identifiedSpecs.push({specname:"unknown", referencedEntity: ent?.id})
                     }
                 }
             }
