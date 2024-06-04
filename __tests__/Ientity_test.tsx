@@ -1,4 +1,4 @@
-import { expect } from '@jest/globals';
+import { it,expect } from '@jest/globals';
 import { cleanConverterParameters, removeModbusData } from 'specification.shared';
 
 var entity: any = { name: "test", converter: { name:"number", functionCodes:[]}, modbusValue: [3, 4, 5], mqttValue: 3, converterParameters: { uom: "kW", multiplier: 1, tobeRemoved: "tobeREmoved" } }

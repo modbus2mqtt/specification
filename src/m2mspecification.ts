@@ -99,8 +99,9 @@ export class M2mSpecification  implements IspecificationValidator, Ispecificatio
                 if (M2mSpecification.githubPersonalToken && M2mSpecification.githubPersonalToken.length) {
                     let github = new M2mGitHub(M2mSpecification.githubPersonalToken, ConfigSpecification.getPublicDir())
                     github.init().then(() => {
-                        github.commitFiles(ConfigSpecification.getLocalDir(), fileList, title, message).then(() => {
-                            github.createPullrequest(title, message).then(issue => {
+                        github.commitFiles(ConfigSpecification.getLocalDir(), spec.filename, fileList, title, message).then((sha) => {
+
+                            github.createPullrequest(title, message, spec.filename).then(issue => {
                                 new ConfigSpecification().changeContributionStatus((this.settings as IbaseSpecification).filename, SpecificationStatus.contributed)
                                 resolve(issue)
                             }).catch(reject)

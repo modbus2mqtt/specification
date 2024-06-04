@@ -1,4 +1,6 @@
 import * as log from 'npmlog';
+import Debug from "debug"
+
 export enum LogLevelEnum {
     verbose = "verbose",
     timing = "timing",
@@ -7,6 +9,8 @@ export enum LogLevelEnum {
     warn = "warn",
     error = "error"
 }
+const debug = Debug("logger");
+
 /*
  * Logger is a gateway to npmlog.
  * It is a workaround to log in jest test environment by forwarding the log to console.log
@@ -44,6 +48,6 @@ export class Logger {
 
     }
     private static forwardToConsole(message: any) {
-        console.log(message.level + " " + message.prefix + ": " + message.message)
+        debug(message.level + " " + message.prefix + ": " + message.message)
     }
 }
