@@ -9,3 +9,4 @@ ssl/
 .jest/*
 **/.DS*_Store
 package-lock.json
+tv.sh
