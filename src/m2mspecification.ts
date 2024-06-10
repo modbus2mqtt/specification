@@ -288,8 +288,12 @@ export class M2mSpecification  implements IspecificationValidator, Ispecificatio
                   if( pullStatus.merged){
                     new ConfigSpecification().changeContributionStatus(spec.filename, SpecificationStatus.published,undefined)
                   }  
-                  else if( pullStatus.closed_at != null)  
+                  else if( pullStatus.closed_at != null)  {
                     new ConfigSpecification().changeContributionStatus(spec.filename, SpecificationStatus.added,undefined)
+                  }
+                  if( spec.status != SpecificationStatus.contributed)
+                    gh.deleteSpecBranch(spec.filename)
+
                   resolve({merged: pullStatus.merged, closed: pullStatus.closed_at != null,pullNumber: spec.pullNumber!})     
                 }catch(e:any){ this.handleCloseContributionError("closeContribution: " +e.message, reject)}
             }).catch(e=>{
