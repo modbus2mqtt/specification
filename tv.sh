@@ -1,7 +1,7 @@
 #!/bin/zsh
 export DEBUG="m2mgithubvalidate validate m2mspecification"
-export PR_NUMBER=74
-export GITHUB_TOKEN=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
+export PR_NUMBER=81
+export GITHUB_TOKEN=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
 npm run build
 node dist/src/validate.js
 

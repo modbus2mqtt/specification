@@ -1,13 +1,26 @@
-import { FileLocation, ImodbusEntity, Itext, MessageTypes, ModbusRegisterType, SPECIFICATION_VERSION, SpecificationFileUsage } from  'specification.shared';
+import { FileLocation, ImodbusEntity, Itext, MessageTypes, ModbusRegisterType, SPECIFICATION_VERSION, SpecificationFileUsage, SpecificationStatus } from  'specification.shared';
 import { ConfigSpecification } from '../src/configspec';
 import { ImodbusValues, M2mSpecification, emptyModbusValues } from '../src/m2mspecification';
-import { Converters, IdentifiedStates, ImodbusSpecification } from 'specification.shared';
+import { Converters, IdentifiedStates } from 'specification.shared';
+import * as fs from'fs'
 import { yamlDir } from './configsbase';
-import { ReadRegisterResult } from '../src/converter';
+import { Mutex} from 'async-mutex'
 import { IfileSpecification } from '../src/ifilespecification';
 import { it,expect, beforeAll} from '@jest/globals';
+import { IpullRequest } from '../src/m2mGithubValidate';
+declare global {
+    namespace NodeJS {
+        interface ProcessEnv {
+            GITHUB_TOKEN: string;
+        }
+    }
+}
+let singleMutex= new Mutex()
+ConfigSpecification.setMqttdiscoverylanguage("en", process.env.GITHUB_TOKEN)
 ConfigSpecification['yamlDir'] = yamlDir;
+
 beforeAll(() => {
+   
     new ConfigSpecification().readYaml()
 })
 var entText: ImodbusEntity = {
@@ -56,8 +69,17 @@ let spec: IfileSpecification = {
         ]
     }
 }
-it("copyModbusDataToEntity  identifiation string identified",()=>{
-    ConfigSpecification.setMqttdiscoverylanguage("en", undefined)
+describe("simple tests",()=>{
+    beforeAll(() => {
+        singleMutex.acquire()
+        new ConfigSpecification().readYaml()
+      });
+
+    afterAll(() => {
+        singleMutex.release()
+    });
+
+    it("copyModbusDataToEntity  identifiation string identified",()=>{
     let tspec = structuredClone(spec)
     tspec.entities = [entText]
     let values:ImodbusValues = emptyModbusValues()
@@ -80,7 +102,6 @@ it("copyModbusDataToEntity  identifiation string identified",()=>{
 })
 it("validation: Find a specification for the given test data", () => {
     let tspec = structuredClone(spec)
-    ConfigSpecification.setMqttdiscoverylanguage("en", undefined)
     let mspec = new M2mSpecification(tspec)
     let msgs = mspec.validate("en")
     let count = 0
@@ -89,7 +110,6 @@ it("validation: Find a specification for the given test data", () => {
     count = 0
 })
 it("validation: readWrite FunctionCode instead of read", () => {
-    ConfigSpecification.setMqttdiscoverylanguage("en", undefined)
     let tspec = structuredClone(spec)
     tspec.entities[0].registerType = ModbusRegisterType.HoldingRegister
     tspec.entities[0].readonly = false
@@ -119,4 +139,112 @@ it("validation: Find no specification null values don't match", () => {
     let count = 0
     msgs.forEach(msg => { if (msg.type == MessageTypes.identifiedByOthers && msg.additionalInformation.length == 1) count++ })
     expect(count).toBe(1)
+})
+})
+
+it("closeContribution", done=> {
+    singleMutex.acquire()
+    let yamlDir = "__tests__/yamlDircloseContribute"
+
+    ConfigSpecification.setMqttdiscoverylanguage("en", process.env.GITHUB_TOKEN)
+    ConfigSpecification['yamlDir'] = "__tests__/yamlDircloseContribute"
+    fs.rmSync(yamlDir, { recursive: true, force: true });
+    fs.mkdirSync(yamlDir);
+    let tspec = structuredClone(spec)
+    let mspec = new M2mSpecification(tspec)
+    new ConfigSpecification().writeSpecificationFromFileSpec(tspec,tspec.filename,undefined)
+    tspec.pullNumber = 81
+    mspec.closeContribution().then(()=>{
+        done()
+        singleMutex.release()
+    }).catch(e=>{
+        console.log("error" + e.message)
+        expect(1).toBeFalsy()})
+  
+})
+class TestM2mSpecification extends M2mSpecification{
+    rcs:{merged:boolean , closed:boolean}[] = [
+        { merged:false, closed:false}, //0
+        { merged:true, closed:false},
+        { merged:false, closed:false},
+        { merged:false, closed:false},
+        { merged:false, closed:false},
+        { merged:false, closed:false}, //5
+        { merged:false, closed:false},
+        { merged:false, closed:false},
+        { merged:false, closed:false},
+        { merged:false, closed:false},
+        { merged:false, closed:true}
+  
+    ]
+    private idx = 0
+    override closeContribution(): Promise<IpullRequest> {
+        return new Promise<IpullRequest>((resolve,reject)=>{
+            if(this.idx >= this.rcs.length)
+                reject(new Error("not enough test data provided"))
+            resolve({
+                pullNumber:16,
+                merged: this.rcs[this.idx].merged,
+                closed: this.rcs[this.idx++].closed
+            })
+        })
+    }
+}
+it("startPolling", done=> {
+   let specP = structuredClone(spec)
+   specP.pullNumber = 16
+   specP.status = SpecificationStatus.contributed
+   ConfigSpecification.githubPersonalToken="abcd" 
+   let m = new TestM2mSpecification(specP)
+   //Speed up test set short intervals
+   m['ghPollInterval']=[1,2,3,4]
+   let o = m.startPolling(
+    (e)=>{expect(true).toBeFalsy()
+    })
+   let callCount =0
+   let expectedCallCount = 2
+   o?.subscribe( {
+    next(pullRequest) {
+        switch(callCount){
+            case 0: expect(pullRequest.merged).toBeFalsy() 
+                break;
+            case 1: expect(pullRequest.merged).toBeTruthy() 
+                break;
+        }
+        callCount++;
+        if( callCount > expectedCallCount)
+            expect(callCount).toBe( expectedCallCount)
+   },
+    complete() {
+       expect( M2mSpecification['ghContributions'].has(specP.filename)).toBeFalsy()
+        expect(callCount).toBe(2)
+        expect(m['ghPollIntervalIndexCount']).toBe(2)
+        expect(m['ghPollIntervalIndex']).toBe(0)
+        expectedCallCount = 11
+        o = m.startPolling(
+            (e)=>{expect(true).toBeFalsy()
+            })
+            o?.subscribe( {
+                next(pullRequest) {
+                    switch(callCount){
+                        case 0: expect(pullRequest.closed).toBeFalsy() 
+                            break;
+                        case 1: expect(pullRequest.closed).toBeTruthy() 
+                            break;
+                    }
+                    callCount++;
+                    if( callCount > expectedCallCount)
+                        expect(callCount).toBe( expectedCallCount)
+               },
+                complete() {
+                    expect( M2mSpecification['ghContributions'].has(specP.filename)).toBeFalsy()
+                    expect(callCount).toBe(expectedCallCount)
+                    expect(m['ghPollIntervalIndexCount']).toBe(0)
+                    expect(m['ghPollIntervalIndex']).toBe(1)
+                    done()
+                }
+                })
+    }
+    })
+    
 })

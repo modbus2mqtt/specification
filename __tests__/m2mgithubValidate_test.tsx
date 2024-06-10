@@ -25,7 +25,7 @@ function testWait(github: M2mGithubValidate, done: any) {
     github.init().then(() => {
         let title = "Test"
         let content = "Some Text"
-        github.getPullRequest( 49).then((pull) => {
+        github.downloadPullRequest( 49).then((pull) => {
             debug("Commit created successfully")
             done()
         }).catch((e) => {
@@ -43,5 +43,5 @@ it('init', done => {
     let github = new M2mGithubValidate(process.env.GITHUB_TOKEN_PARENT as string, "__tests__/yamlDirValidate")
   
         testWait(github, done)
-})
+},10000)
 

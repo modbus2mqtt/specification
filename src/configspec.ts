@@ -284,7 +284,9 @@ export class ConfigSpecification {
         let newParentDir = path.dirname(newPath)
         if (!fs.existsSync(newParentDir))
             fs.mkdirSync(newParentDir, { recursive: true })
-        if (!fs.existsSync(newPath) && fs.existsSync(oldPath))
+        if(fs.existsSync(newPath))
+            fs.rmSync( newPath,{recursive:true})
+        if ( fs.existsSync(oldPath))
             fs.renameSync(oldPath, newPath)
         this.readFilesYaml(specsDir, spec)
     }
@@ -296,9 +298,11 @@ export class ConfigSpecification {
                 delete spec.manufacturer
             if (!spec.model || spec.model.length == 0)
                 delete spec.model
-            if (spec.publicSpecification)
-                delete spec.publicSpecification;
         })
+        if( spec.status != SpecificationStatus.contributed)
+            delete spec.pullNumber
+        delete spec.publicSpecification
+        delete (spec as any).identified
     }
     changeContributionStatus(filename: string, newStatus: SpecificationStatus, pullNumber?:number) {
         // moves Specification files to contribution directory
@@ -308,28 +312,53 @@ export class ConfigSpecification {
         if (newStatus && newStatus == spec.status)
             return
         let newPath = this.getContributedSpecificationPath(spec)
-        let oldPath = this.getSpecificationPath(spec);
+        let oldPath = this.getSpecificationPath(spec); 
         let newDirectory = "contributed"
-        if ([SpecificationStatus.cloned, SpecificationStatus.added].includes(newStatus) && spec.status == SpecificationStatus.contributed) {
-            let publicPath = this.getPublicSpecificationPath(spec)
-            if (fs.existsSync(publicPath))
-                newStatus = SpecificationStatus.cloned
-            else
-                newStatus = SpecificationStatus.added
-            newPath = this.getSpecificationPath(spec)
-            newDirectory = "local"
-            oldPath = this.getContributedSpecificationPath(spec);
+        switch(newStatus){
+            case SpecificationStatus.published:
+                oldPath = this.getContributedSpecificationPath(spec)
+                newPath = this.getPublicSpecificationPath(spec);
+                newDirectory = "public"
+                break;
+            case SpecificationStatus.cloned:
+            case  SpecificationStatus.added:
+                if(spec.status == SpecificationStatus.contributed){
+                    let publicPath = this.getPublicSpecificationPath(spec)
+                    if (fs.existsSync(publicPath))
+                        newStatus = SpecificationStatus.cloned
+                    else
+                        newStatus = SpecificationStatus.added
+                    newPath = this.getSpecificationPath(spec)
+                    newDirectory = "local"
+                    oldPath = this.getContributedSpecificationPath(spec);
+                }
+                break;
+
+            default: // contributed
         }
-        // firet move files, because old status must be "local" directory before calling it
-        this.renameFilesPath(spec, spec.filename, newDirectory)
-        fs.renameSync(oldPath, newPath)
+        // first move files, because spec.status must point to oldPath directory before calling it
+        // move spec file from oldpath to newpath
+        if( newDirectory != "public"){
+            this.renameFilesPath(spec, spec.filename, newDirectory)
+            fs.renameSync(oldPath, newPath)
+        }
+        else{
+            if( fs.existsSync(oldPath))
+                fs.rmSync( oldPath,{recursive:true}) // public directory was already fetched
+            let specDir = path.parse(oldPath).dir
+
+            let filesDir = join(specDir, "files", spec.filename)
+            if( fs.existsSync(filesDir))
+                fs.rmSync( filesDir,{recursive:true}) // public directory was already fetched
+        }
+
         // Now change the status in ConfigSpecification.specifications array
         spec = ConfigSpecification.specifications.find(f => f.filename == filename)
         if (spec){
             spec.status = newStatus;
             if(newStatus == SpecificationStatus.contributed){
                 (spec as IfileSpecification).pullNumber = pullNumber
-                new ConfigSpecification().writeSpecificationFromFileSpec(spec,null,pullNumber)                
+                this.writeSpecificationFromFileSpec(spec,spec.filename,pullNumber)                
             }
         }
             
@@ -362,15 +391,20 @@ export class ConfigSpecification {
             }
             else
                 throw new Error(spec.status + " !=" + SpecificationStatus.new + " and no originalfilename")
-            if (!fs.existsSync(publicFilepath))
-                spec.status = SpecificationStatus.added;
+            if( pullNumber != undefined){
+                spec.status = SpecificationStatus.contributed
+                filename = contributedFilepath
+            }  
             else
-                if (fs.existsSync(contributedFilepath)) {
-                    spec.status = SpecificationStatus.contributed;
-                    filename = contributedFilepath
-                }
+                if (!fs.existsSync(publicFilepath))
+                      spec.status = SpecificationStatus.added;
                 else
-                    spec.status = SpecificationStatus.cloned;
+                    if (fs.existsSync(contributedFilepath)) {
+                        spec.status = SpecificationStatus.contributed;
+                        filename = contributedFilepath
+                    }
+                    else
+                        spec.status = SpecificationStatus.cloned;
         }
         else throw new Error("spec is undefined")
 

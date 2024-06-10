@@ -22,7 +22,10 @@ interface ITreeParam {
     type: "blob",
     sha: string
 }
-
+interface IPullRequestStatusInfo {
+    merged:boolean,
+    closed_at:string|null
+}
 export class M2mGitHub {
 
     private ownOwner: string | undefined;
@@ -188,7 +191,22 @@ export class M2mGitHub {
         })
     }
     
-
+    getPullRequest(pullNumber:number): Promise<IPullRequestStatusInfo>{
+        return new Promise<IPullRequestStatusInfo>((resolve, reject)=>{
+            this.octokit.pulls.get({
+                owner: githubPublicNames.publicModbus2mqttOwner,
+                repo: githubPublicNames.modbus2mqttRepo,
+                pull_number: pullNumber
+            }).then( pull=>{
+                
+                resolve(pull.data)
+            }).catch(e=>{ 
+                if( e.step == undefined) e.step="downloadFile"
+                    debug( JSON.stringify(e))
+                reject(e)
+            })            
+        })
+    }
     getInfoFromError(e: any) {
         let msg = JSON.stringify(e)
         if (e.message)

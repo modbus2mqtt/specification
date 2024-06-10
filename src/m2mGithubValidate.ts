@@ -10,7 +10,7 @@ let path = require("path");
 
 const debug = require('debug')('m2mgithubvalidate');
 export interface IpullRequest {
-    files:string[],
+    files?:string[],
     merged:boolean,
     closed:boolean,
     pullNumber:number
@@ -44,7 +44,7 @@ export class M2mGithubValidate extends M2mGitHub{
             }).catch((e)=>{ e.step = "getBlob"; reject(e)})
         })
     }
-    getPullRequest(pullNumber:number):Promise<IpullRequest>{
+    downloadPullRequest(pullNumber:number):Promise<IpullRequest>{
     return new Promise<IpullRequest>((resolve, reject)=>{
         this.octokit.pulls.get({
             owner: githubPublicNames.publicModbus2mqttOwner,

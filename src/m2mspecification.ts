@@ -14,6 +14,9 @@ import { Ispecification, IbaseSpecification, SpecificationStatus, getSpecificati
 import { ConfigSpecification } from "./configspec";
 import { ConverterMap } from "./convertermap";
 import { LogLevelEnum, Logger } from "./log";
+import { Mutex} from "async-mutex"
+import { Observable, Subject, Subscription, merge } from "rxjs";
+import { IpullRequest } from "./m2mGithubValidate";
 
 const log = new Logger('m2mSpecification')
 const debug = require('debug')('m2mspecification');
@@ -31,11 +34,22 @@ export function emptyModbusValues():ImodbusValues  {
     analogInputs: new Map<number, ReadRegisterResult|null>()
 }
 }
+interface Icontribution{
+    pullRequest:number
+    monitor:Subject<IpullRequest>
+    pollCount:number
+    interval?: NodeJS.Timeout
+}
 export class M2mSpecification  implements IspecificationValidator, IspecificationContributor {
     private differentFilename = false
     private notBackwardCompatible = false
+    private ghPollInterval:number[] = [5000, 5000 * 60, 5000 * 60 * 60, 1000 * 60 * 60 *24];
+    private ghPollIntervalIndex:number =0
+    private ghPollIntervalIndexCount:number =0
+    private ghCloseContribution = false
+    private static ghContributions = new Map<string, Icontribution>()
 
-    constructor(private settings: Ispecification|ImodbusEntity[]) {
+     constructor(private settings: Ispecification|ImodbusEntity[]) {
         {
             if (!(this.settings as ImodbusSpecification).i18n) {
                 (this.settings as ImodbusSpecification) = {
@@ -246,8 +260,47 @@ export class M2mSpecification  implements IspecificationValidator, Ispecificatio
             return " This will break compatibilty with previous version"
         return msg
     }
-    closeContribution(): void {
-        throw new Error("Method not implemented.");
+    private handleCloseContributionError(msg:string, reject: (e:any)=>void):void{
+        log.log(LogLevelEnum.error,msg)
+        let e =  new Error(msg);
+        (e as any).step ="closeContribution"
+        reject(e)
+    }
+    closeContribution(): Promise<IpullRequest> {
+        return new Promise<IpullRequest>((resolve, reject)=>{
+                   
+            if( undefined == ConfigSpecification.githubPersonalToken ){
+                this.handleCloseContributionError(
+                    "No Github Personal Access Token configured. Unable to close contribution " + (this.settings as IfileSpecification).filename,
+                    reject)
+                return
+            }
+        let spec = this.settings as IfileSpecification
+        if(spec.pullNumber == undefined){
+            this.handleCloseContributionError("No Pull Number in specification. Unable to close contribution " + spec.filename, reject)
+            return
+        }
+        let gh = new M2mGitHub(ConfigSpecification.githubPersonalToken!, join(ConfigSpecification.yamlDir, "public"))
+        gh.init().then(()=>{
+            gh.getPullRequest(spec.pullNumber!).
+            then( pullStatus=>{
+                try{
+                  if( pullStatus.merged){
+                    new ConfigSpecification().changeContributionStatus(spec.filename, SpecificationStatus.published,undefined)
+                  }  
+                  else if( pullStatus.closed_at != null)  
+                    new ConfigSpecification().changeContributionStatus(spec.filename, SpecificationStatus.added,undefined)
+                  resolve({merged: pullStatus.merged, closed: pullStatus.closed_at != null,pullNumber: spec.pullNumber!})     
+                }catch(e:any){ this.handleCloseContributionError("closeContribution: " +e.message, reject)}
+            }).catch(e=>{
+               this.handleCloseContributionError("closeContribution: " +e.message, reject)
+            })
+        }).catch(e=>{
+            this.handleCloseContributionError("closeContribution: " +e.message, reject)
+         })
+        })
+ 
+
     }
     getSpecificationsFilesList(): string[] {
         let files: string[] = []
@@ -728,5 +781,59 @@ export class M2mSpecification  implements IspecificationValidator, Ispecificatio
             M2mSpecification.copyNullValues(slaveAddresses.coils,testdata.coils)
        return testdata
     } 
+    startPolling(error: (e: any) => void):Observable<IpullRequest>|undefined {
+        let spec = (this.settings as IfileSpecification)
+        let contribution = M2mSpecification.ghContributions.get(spec.filename)
+        if (contribution == undefined && spec.pullNumber ) {
+            let c:Icontribution={ 
+                pullRequest: spec.pullNumber,
+                monitor:new Subject<IpullRequest>(),
+                pollCount: 0,
+                interval: setInterval(() => {
+                    this.poll(error)
+                    }, 100)
+            }
+            M2mSpecification.ghContributions.set(spec.filename, c)
+            return c.monitor;
+        }
+        return undefined
+    }
+    private poll(error: (e: any) => void){
+                let spec = (this.settings as IfileSpecification)
+                if( ConfigSpecification.githubPersonalToken == undefined || spec.status != SpecificationStatus.contributed || spec.pullNumber == undefined )
+                    return;
 
+                let contribution = M2mSpecification.ghContributions.get(spec.filename)
+                if( contribution == undefined ){
+                    this.handleCloseContributionError("Unexpected undefined contribution", error)
+                }
+                else{
+                    if ( contribution.pollCount >  this.ghPollInterval[this.ghPollIntervalIndex] / 100 )
+                        contribution.pollCount = 0
+                    if (contribution.pollCount == 0) {
+                        // Set ghPollIntervalIndex (Intervall duration)
+                        // 10 * every 5 second, 10 * every 5 minutes, 10 * every 5 hours, then once a day
+                        if( this.ghPollIntervalIndexCount++ >= 10 && 
+                            this.ghPollIntervalIndex < this.ghPollInterval.length-1 ){
+                                this.ghPollIntervalIndex++
+                                this.ghPollIntervalIndexCount = 0
+                        }
+                        this.ghCloseContribution = true 
+                        this.closeContribution().then((pullStatus)=>{
+                            if( contribution){
+                                contribution.monitor.next(pullStatus)
+                                if( pullStatus.closed || pullStatus.merged){
+                                        clearInterval( contribution.interval)
+                                        M2mSpecification.ghContributions.delete(spec.filename)                                    
+                                        contribution.monitor.complete()
+                                }
+                            }
+                        }).catch(error).finally(()=>{
+                            this.ghCloseContribution = false
+                        })
+                    }
+                    contribution.pollCount++                    
+               
+                }  
+    }
 }

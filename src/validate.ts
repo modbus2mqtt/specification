@@ -4,7 +4,6 @@ import { Command } from 'commander'
 import { ConfigSpecification } from "./configspec";
 import * as fs from 'fs';
 import { M2mGithubValidate } from "./m2mGithubValidate";
-import { join } from "path";
 import path = require("path");
 import { M2mSpecification } from "./m2mspecification";
 const debug = require('debug')('validate');
@@ -56,13 +55,14 @@ let gh = new M2mGithubValidate(process.env.GITHUB_TOKEN,yamlDir)
         process.exit(2)
     }
     let pullNumber = Number.parseInt(process.env.PR_NUMBER)
-    gh.getPullRequest(pullNumber).then( pr=>{
+    gh.downloadPullRequest(pullNumber).then( pr=>{
         let specname:string|undefined
         debug("getPullRequest finished")
+        if( pr.files != undefined)
         pr.files.forEach(file=>{
             if( file.endsWith(".yaml")&& -1 == file.indexOf("/files.yaml")){
                 specname = path.parse(file).name
-                debug("specname file exists" + specname + "=" + file)
+                debug("specname file exists " + specname + "=" + file)
             }
         })
         if( specname != undefined)
@@ -75,8 +75,13 @@ let gh = new M2mGithubValidate(process.env.GITHUB_TOKEN,yamlDir)
                     let m2mSpec = new M2mSpecification(fs)
                     let messages = m2mSpec.validate("en")
                     if( messages.length == 0){
-                        gh.mergePullRequest(pullNumber)
-                        process.exit(0)
+                        log.log(LogLevelEnum.notice, "specification is valid")
+                        gh.mergePullRequest(pullNumber).then(()=>{
+                            log.log(LogLevelEnum.notice, "Pull Request merged successfully")
+                            gh.addIssueComment(pullNumber, "**$${\\color{green}Merged successfully\\space successfully}$$**\nSpecification '" + specname + "' has been merged" ).then(()=>{
+                                process.exit(0)
+                            }).catch(e=>{log.log(LogLevelEnum.error, e.message); process.exit(5)}) 
+                        }).catch(e=>{log.log(LogLevelEnum.error, e.message); process.exit(5)}) 
                     }else{
                         let m:string=""
                         messages.forEach(msg=>{
