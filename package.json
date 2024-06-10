@@ -25,6 +25,7 @@
   "dependencies": {
     "@octokit/rest": "^20.1.1",
     "@types/npmlog": "^7.0.0",
+    "commander": "^12.1.0",
     "fs": "^0.0.1-security",
     "jszip": "^3.10.1",
     "logger": "^0.0.1",
