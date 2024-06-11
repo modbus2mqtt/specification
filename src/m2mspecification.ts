@@ -293,7 +293,7 @@ export class M2mSpecification  implements IspecificationValidator, Ispecificatio
                   }
                   if( spec.status != SpecificationStatus.contributed)
                     gh.deleteSpecBranch(spec.filename)
-
+                  gh.fetchPublicFiles()
                   resolve({merged: pullStatus.merged, closed: pullStatus.closed_at != null,pullNumber: spec.pullNumber!})     
                 }catch(e:any){ this.handleCloseContributionError("closeContribution: " +e.message, reject)}
             }).catch(e=>{

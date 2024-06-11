@@ -9,6 +9,7 @@ import { IModbusData, IfileSpecification } from './ifilespecification';
 import { ConverterMap } from './convertermap';
 import { M2mSpecification } from './m2mspecification';
 import { Migrator } from './migrator';
+import { M2mGitHub } from './m2mgithub';
 
 declare global {
     namespace NodeJS {
@@ -142,6 +143,8 @@ export class ConfigSpecification {
                         if (!o.nextEntityId || entity.id > o.nextEntityId + 1)
                             o.nextEntityId = entity.id + 1
                     })
+                    if( o.pullNumber)
+                        o.pullUrl = M2mGitHub.getPullRequestUrl(o.pullNumber)
                     //debug("specifications: " + getSpecificationI18nName(o, "en") + " filename:" + o.filename + " new: " + newfn);
                     if (!o.files)
                         o.files = [];
@@ -176,6 +179,9 @@ export class ConfigSpecification {
                     let published = publishedSpecifications.find(obj => { return obj.filename === specification.filename })
                     if (published)
                         specification.publicSpecification = published;
+                    specification.status = SpecificationStatus.contributed;
+                    if( specification.pullNumber == undefined)
+                        log.log(LogLevelEnum.error, "Contributed Specification w/o pull request number: " + specification.filename)
                     ConfigSpecification.specifications.push(specification);
                 };
             });

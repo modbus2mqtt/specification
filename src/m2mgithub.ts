@@ -24,7 +24,8 @@ interface ITreeParam {
 }
 interface IPullRequestStatusInfo {
     merged:boolean,
-    closed_at:string|null
+    closed_at:string|null,
+    html_url:string
 }
 export class M2mGitHub {
 
@@ -156,11 +157,15 @@ export class M2mGitHub {
             auth: personalAccessToken,
         })
     }
-    protected fetchPublicFiles(): void {
+    fetchPublicFiles(): void {
+        debug("Fetch public files")
         if (existsSync(join(this.publicRoot, ".git")))
-            log.log(LogLevelEnum.notice, execSync("git fetch", { cwd: this.publicRoot }))
+            log.log(LogLevelEnum.notice, execSync("git pull", { cwd: this.publicRoot }))
         else
             log.log(LogLevelEnum.notice, execSync("git clone https://github.com/" + githubPublicNames.publicModbus2mqttOwner + "/" + githubPublicNames.modbus2mqttRepo + ".git " + this.publicRoot))
+    }
+    static getPullRequestUrl(pullNumber:number):string{
+        return `https://github.com/${githubPublicNames.publicModbus2mqttOwner}/${githubPublicNames.modbus2mqttRepo}/pull/${pullNumber}`
     }
     createPullrequest(title: string, content: string, branchName: string): Promise<number> {
         return new Promise<number>((resolve, reject) => {
