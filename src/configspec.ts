@@ -3,8 +3,8 @@ import * as fs from 'fs';
 import * as path from 'path';
 import { join } from 'path';
 import { LogLevelEnum, Logger }from './log'
-import { EnumNumberFormat, FileLocation, IbaseSpecification, IimageAndDocumentUrl, ImodbusSpecification, Inumber, ModbusRegisterType, SPECIFICATION_VERSION, SpecificationFileUsage, SpecificationStatus, getSpecificationI18nName } from 'specification.shared';
-import { getBaseFilename } from "specification.shared";
+import { EnumNumberFormat, FileLocation, IbaseSpecification, IimageAndDocumentUrl, ImodbusSpecification, Inumber, ModbusRegisterType, SPECIFICATION_VERSION, SpecificationFileUsage, SpecificationStatus, getSpecificationI18nName } from '@modbus2mqtt/specification.shared';
+import { getBaseFilename } from '@modbus2mqtt/specification.shared';
 import { IModbusData, IfileSpecification } from './ifilespecification';
 import { ConverterMap } from './convertermap';
 import { M2mSpecification } from './m2mspecification';

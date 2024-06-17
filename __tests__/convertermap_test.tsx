@@ -1,5 +1,5 @@
 import { ConverterMap } from '../src/convertermap';
-import { Converters, Ientity, Ispecification, ModbusRegisterType } from 'specification.shared';
+import { Converters, Ientity, Ispecification, ModbusRegisterType } from '@modbus2mqtt/specification.shared';
 import { ConfigSpecification } from '../src/configspec';
 import { it,expect, beforeAll} from '@jest/globals';
 

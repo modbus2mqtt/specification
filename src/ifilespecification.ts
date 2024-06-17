@@ -1,4 +1,4 @@
-import { Ispecification } from "specification.shared";
+import { Ispecification } from '@modbus2mqtt/specification.shared';
 export interface Idata {
     address:number,
     value:number|null,

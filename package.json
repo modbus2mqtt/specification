@@ -1,5 +1,5 @@
 {
-  "name": "specification",
+  "name": "@modbus2mqtt/specification",
   "version": "0.7.0",
   "description": "File access, github access and validation for specifications",
   "keywords": [
@@ -23,6 +23,7 @@
     "build": "tsc"
   },
   "dependencies": {
+    "@modbus2mqtt/specification.shared": "file:../specification.shared",
     "@octokit/rest": "^20.1.1",
     "@types/npmlog": "^7.0.0",
     "commander": "^12.1.0",
@@ -32,7 +33,6 @@
     "npmlog": "^7.0.1",
     "path": "^0.12.7",
     "rxjs": "^7.8.1",
-    "specification.shared": "file:../specification.shared",
     "yaml": "^2.4.2"
   },
   "devDependencies": {
@@ -45,6 +45,7 @@
     "nodemon": "^3.1.0",
     "ts-jest": "^29.1.3",
     "ts-node": "^10.9.2",
+    "tslib": "^2.6.3",
     "typescript": "^5.4.5"
   }
 }

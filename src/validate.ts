@@ -1,4 +1,4 @@
-import { SPECIFICATION_VERSION } from "specification.shared";
+import { SPECIFICATION_VERSION } from '@modbus2mqtt/specification.shared';
 import { LogLevelEnum, Logger } from "./log";
 import { Command } from 'commander'
 import { ConfigSpecification } from "./configspec";

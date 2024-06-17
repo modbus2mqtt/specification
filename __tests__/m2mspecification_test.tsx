@@ -1,12 +1,12 @@
-import { FileLocation, ImodbusEntity, Itext, MessageTypes, ModbusRegisterType, SPECIFICATION_VERSION, SpecificationFileUsage, SpecificationStatus } from  'specification.shared';
+import { FileLocation, ImodbusEntity, Itext, MessageTypes, ModbusRegisterType, SPECIFICATION_VERSION, SpecificationFileUsage, SpecificationStatus } from  '@modbus2mqtt/specification.shared';
 import { ConfigSpecification } from '../src/configspec';
 import { ImodbusValues, M2mSpecification, emptyModbusValues } from '../src/m2mspecification';
-import { Converters, IdentifiedStates } from 'specification.shared';
+import { Converters, IdentifiedStates } from '@modbus2mqtt/specification.shared';
 import * as fs from'fs'
 import { yamlDir } from './configsbase';
 import { Mutex} from 'async-mutex'
 import { IfileSpecification } from '../src/ifilespecification';
-import { it,expect, beforeAll} from '@jest/globals';
+import { it,expect, beforeAll, describe, afterAll} from '@jest/globals';
 import { IpullRequest } from '../src/m2mGithubValidate';
 declare global {
     namespace NodeJS {

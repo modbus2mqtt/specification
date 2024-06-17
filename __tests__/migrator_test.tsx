@@ -2,7 +2,7 @@
 import { expect } from '@jest/globals';
 import { ConfigSpecification } from '../src/configspec';
 import { yamlDir } from './configsbase';
-import { SPECIFICATION_VERSION } from 'specification.shared';
+import { SPECIFICATION_VERSION } from '@modbus2mqtt/specification.shared';
 
 
 ConfigSpecification['yamlDir'] = yamlDir;

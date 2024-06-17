@@ -1,6 +1,6 @@
-import { Converters, ImodbusEntity, ModbusRegisterType } from "specification.shared";
+import { Converters, ImodbusEntity, ModbusRegisterType } from '@modbus2mqtt/specification.shared';
 import { Converter, ReadRegisterResult } from "./converter";
-import { EnumNumberFormat, Inumber, Ispecification,  Ientity } from 'specification.shared';
+import { EnumNumberFormat, Inumber, Ispecification,  Ientity } from '@modbus2mqtt/specification.shared';
 import { M2mSpecification } from "./m2mspecification";
 
 export class NumberConverter extends Converter {

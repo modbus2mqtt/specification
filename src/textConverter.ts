@@ -1,5 +1,5 @@
 import { Converter } from "./converter";
-import { Ivalue, Ientity, Ispecification, Converters, ModbusRegisterType } from 'specification.shared';
+import { Ivalue, Ientity, Ispecification, Converters, ModbusRegisterType } from '@modbus2mqtt/specification.shared';
 import { ReadRegisterResult } from "./converter";
 
 export class TextConverter extends Converter {

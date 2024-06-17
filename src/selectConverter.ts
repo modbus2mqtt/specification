@@ -1,5 +1,5 @@
 import { Converter } from "./converter";
-import { Ientity, Ispecification, getSpecificationI18nEntityOptionName, getSpecificationI18nEntityOptionId, IselectOption, Iselect, ModbusRegisterType, Converters } from 'specification.shared';
+import { Ientity, Ispecification, getSpecificationI18nEntityOptionName, getSpecificationI18nEntityOptionId, IselectOption, Iselect, ModbusRegisterType, Converters } from '@modbus2mqtt/specification.shared';
 import { LogLevelEnum, Logger } from "./log";
 import { ReadRegisterResult } from "./converter";
 import { ConfigSpecification } from "./configspec";

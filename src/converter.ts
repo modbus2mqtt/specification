@@ -1,5 +1,5 @@
 //import { ReadRegisterResult } from 'modbus-serial/ModbusRTU';
-import {  Ientity, ModbusRegisterType, Ispecification, Converters } from 'specification.shared';
+import {  Ientity, ModbusRegisterType, Ispecification, Converters } from '@modbus2mqtt/specification.shared';
 
 export interface ReadRegisterResult {
     data: Array<number>;

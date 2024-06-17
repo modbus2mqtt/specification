@@ -1,5 +1,5 @@
 import { Converter } from "./converter";
-import { Converters, Ientity,Ispecification, ModbusRegisterType } from 'specification.shared';
+import { Converters, Ientity,Ispecification, ModbusRegisterType } from '@modbus2mqtt/specification.shared';
 import { ReadRegisterResult } from "./converter";
 
 export class BinaryConverter extends Converter {

@@ -3,7 +3,7 @@ import { ConfigSpecification } from '../src/configspec';
 import * as fs from 'fs';
 import { join } from 'path';
 import { yamlDir } from './configsbase';
-import { SpecificationFileUsage, SpecificationStatus, getFileNameFromName, getSpecificationI18nName, newSpecification } from 'specification.shared';
+import { SpecificationFileUsage, SpecificationStatus, getFileNameFromName, getSpecificationI18nName, newSpecification } from '@modbus2mqtt/specification.shared';
 import { emptyModbusValues } from '../src/m2mspecification';
 import { IModbusData } from '../src/ifilespecification';
 

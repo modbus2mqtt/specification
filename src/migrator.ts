@@ -1,6 +1,6 @@
 import { file } from "jszip";
 import { IModbusData, IfileSpecification } from "./ifilespecification";
-import { ModbusRegisterType, SPECIFICATION_VERSION } from "specification.shared";
+import { ModbusRegisterType, SPECIFICATION_VERSION } from '@modbus2mqtt/specification.shared';
 import {LogLevelEnum, Logger} from "./log"
 import { ImodbusValues, emptyModbusValues } from "./m2mspecification";
 let log = new Logger("migrator")

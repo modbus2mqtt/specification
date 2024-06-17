@@ -3,7 +3,7 @@ import { NumberConverter } from "./numberConverter";
 import { TextConverter } from "./textConverter";
 import { SelectConverter } from "./selectConverter";
 import { ValueConverter } from "./valueconverter";
-import { Ientity, Iconverter, Converters } from 'specification.shared';
+import { Ientity, Iconverter, Converters } from '@modbus2mqtt/specification.shared';
 import { BinaryConverter } from "./binaryConverter";
 import { ConfigSpecification } from "./configspec";
 
