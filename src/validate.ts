@@ -4,7 +4,7 @@ import { Command } from 'commander'
 import { ConfigSpecification } from "./configspec";
 import * as fs from 'fs';
 import { M2mGithubValidate } from "./m2mGithubValidate";
-import path = require("path");
+import path from "path";
 import { M2mSpecification } from "./m2mspecification";
 const debug = require('debug')('validate');
 
