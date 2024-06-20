@@ -3,6 +3,7 @@ __tests__/*
 tsconfig.json
 jest.config.ts
 package-lock.json
+package.json.bck
 node_modules/*
 *.tsbuildinfo
 
@@ -11,3 +12,4 @@ node_modules/*
 .jest/
 .vscode/*
 **/*-yaml/**
+tv.sh

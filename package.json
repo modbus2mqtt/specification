@@ -21,7 +21,7 @@
     "test": "jest",
     "build.modbusserver": "mkdir -p distsrv && tsc --project tsconfig.modbusserver.json && sed '/\"scripts\"/,/}[,]$/ d; /^$/d' package.json >package.dist",
     "build": "tsc && npx  @opengovsg/credits-generator",
-    "prepack": "../server.shared/changeModbusDependencies.sh package.json",
+    "prepack": "../changeModbusDependencies.sh package.json",
     "postpack": "rm package.json && mv package.json.bck package.json"
   },
   "dependencies": {
