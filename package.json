@@ -10,6 +10,7 @@
   "bugs": "https://github.com/modbus2mqtt/server/issues",
   "type": "commonjs",
   "main": "dist/index.js",
+  "types": "dist/index.d.ts",
   "bin": "dist/src/validate.js",
   "author": "Volkmar Nissen <volkmar.nissen@gmail.com>",
   "license": "MIT",

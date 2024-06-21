@@ -1,4 +1,4 @@
-import * as log from 'npmlog';
+import npmlog from 'npmlog';
 import Debug from "debug"
 
 export enum LogLevelEnum {
@@ -27,16 +27,16 @@ export class Logger {
         if (!Logger.isInitialized) {
             Logger.init()
         }
-        log.log(level, this.prefix, message, ...args)
+        npmlog.log(level, this.prefix, message, ...args)
     }
     private static init(): void {
         Logger.isInitialized = true
         //log.level = Logger.logLevel
         if (process.env['JEST_WORKER_ID'] !== undefined) {
-            log.on("log", Logger.forwardToConsole)
+            npmlog.on("log", Logger.forwardToConsole)
         }
         else {
-            Object.defineProperty(log, 'heading', {
+            Object.defineProperty(npmlog, 'heading', {
                 get: () => {
                     var d = new Date()
                     return d.toLocaleDateString() + " " + d.toLocaleTimeString()
