@@ -1,6 +1,6 @@
 {
   "name": "@modbus2mqtt/specification",
-  "version": "0.7.0",
+  "version": "0.8.0",
   "description": "File access, github access and validation for specifications",
   "keywords": [
     "modbus2mqtt",
@@ -26,7 +26,7 @@
     "postpack": "rm package.json && mv package.json.bck package.json"
   },
   "dependencies": {
-    "@modbus2mqtt/specification.shared": "file:../specification.shared",
+    "@modbus2mqtt/specification.shared": "0.7.0",
     "@octokit/rest": "^20.1.1",
     "@types/npmlog": "^7.0.0",
     "commander": "^12.1.0",
