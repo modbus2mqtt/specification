@@ -2,7 +2,7 @@ import { parse, stringify } from 'yaml';
 import * as fs from 'fs';
 import * as path from 'path';
 import { join } from 'path';
-import { LogLevelEnum, Logger }from './log'
+import { LogLevelEnum, Logger } from './log'
 import { EnumNumberFormat, FileLocation, IbaseSpecification, IimageAndDocumentUrl, ImodbusSpecification, Inumber, ModbusRegisterType, SPECIFICATION_VERSION, SpecificationFileUsage, SpecificationStatus, getSpecificationI18nName } from '@modbus2mqtt/specification.shared';
 import { getBaseFilename } from '@modbus2mqtt/specification.shared';
 import { IModbusData, IfileSpecification } from './ifilespecification';
@@ -28,19 +28,19 @@ export const filesUrlPrefix = 'specifications/files'
 //const baseTopic = 'modbus2mqtt';
 //const baseTopicHomeAssistant = 'homeassistant';
 export class ConfigSpecification {
-    static setMqttdiscoverylanguage(lang:string, ghToken?:string){
+    static setMqttdiscoverylanguage(lang: string, ghToken?: string) {
         ConfigSpecification.mqttdiscoverylanguage = lang
         ConfigSpecification.githubPersonalToken = ghToken
     }
-    static mqttdiscoverylanguage:string| undefined
-    static githubPersonalToken:string| undefined
+    static mqttdiscoverylanguage: string | undefined
+    static githubPersonalToken: string | undefined
     static getPublicDir(): string {
         return join(ConfigSpecification.yamlDir, "public")
     }
     static getLocalDir(): string {
         return join(ConfigSpecification.yamlDir, "local")
     }
-    constructor(){}
+    constructor() { }
     getPublicSpecificationPath(spec: IbaseSpecification): string {
         return ConfigSpecification.yamlDir + "/public/specifications/" + spec.filename + ".yaml"
     }
@@ -51,7 +51,13 @@ export class ConfigSpecification {
         return ConfigSpecification.yamlDir + "/local/specifications/" + spec.filename + ".yaml"
     }
     private getLocalFilesPath(specfilename: string): string {
-        return getSpecificationImageOrDocumentUrl( "local", specfilename, "")
+        return getSpecificationImageOrDocumentUrl("local", specfilename, "")
+    }
+    private getPublicFilesPath(specfilename: string): string {
+        return getSpecificationImageOrDocumentUrl("public", specfilename, "")
+    }
+    private getContributedFilesPath(specfilename: string): string {
+        return getSpecificationImageOrDocumentUrl("contributed", specfilename, "")
     }
     appendSpecificationUrl(specfilename: string, url: IimageAndDocumentUrl): IimageAndDocumentUrl[] | undefined {
         let filesPath = this.getLocalFilesPath(specfilename)
@@ -59,8 +65,8 @@ export class ConfigSpecification {
             fs.mkdirSync(filesPath, { recursive: true })
 
         let files: IimageAndDocumentUrl[] = []
-        if (fs.existsSync(join(ConfigSpecification.yamlDir,filesPath))) {
-            let filesName = join( ConfigSpecification.yamlDir, filesPath, "files.yaml")
+        if (fs.existsSync(join(ConfigSpecification.yamlDir, filesPath))) {
+            let filesName = join(ConfigSpecification.yamlDir, filesPath, "files.yaml")
             try {
                 let content = fs.readFileSync(filesName, { encoding: 'utf8' })
                 files = parse(content.toString())
@@ -88,11 +94,11 @@ export class ConfigSpecification {
     }
 
     private static specifications: IfileSpecification[];
-    
+
 
     static yamlDir: string = "";
 
-    
+
     private readFilesYaml(directory: string, spec: IfileSpecification) {
         let fp = join(directory, "files", spec.filename, "files.yaml")
 
@@ -102,7 +108,7 @@ export class ConfigSpecification {
             spec.files = f;
         }
         else {
-            log.log(LogLevelEnum.notice,"File not found: " + fp)
+            log.log(LogLevelEnum.notice, "File not found: " + fp)
             spec.files = []
         }
         spec.files.forEach(file => {
@@ -125,7 +131,7 @@ export class ConfigSpecification {
                     let newfn = file.replace(".yaml", "");
                     var src: string = fs.readFileSync(directory + "/" + file, { encoding: 'utf8' });
                     var o: IfileSpecification = parse(src);
-                    if (o.version != SPECIFICATION_VERSION ){
+                    if (o.version != SPECIFICATION_VERSION) {
                         o = new Migrator().migrate(o)
                     }
 
@@ -143,7 +149,7 @@ export class ConfigSpecification {
                         if (!o.nextEntityId || entity.id > o.nextEntityId + 1)
                             o.nextEntityId = entity.id + 1
                     })
-                    if( o.pullNumber)
+                    if (o.pullNumber)
                         o.pullUrl = M2mGitHub.getPullRequestUrl(o.pullNumber)
                     //debug("specifications: " + getSpecificationI18nName(o, "en") + " filename:" + o.filename + " new: " + newfn);
                     if (!o.files)
@@ -157,11 +163,11 @@ export class ConfigSpecification {
         });
         return rc;
     }
-   
+
     // set the base file for relative includes
     readYaml(): void {
         try {
-   
+
             var publishedSpecifications: IfileSpecification[] = this.readspecifications(ConfigSpecification.yamlDir + "/public/specifications");
             var contributedSpecifications: IfileSpecification[] = this.readspecifications(ConfigSpecification.yamlDir + "/contributed/specifications");
             ConfigSpecification.specifications = this.readspecifications(ConfigSpecification.yamlDir + "/local/specifications");
@@ -180,7 +186,7 @@ export class ConfigSpecification {
                     if (published)
                         specification.publicSpecification = published;
                     specification.status = SpecificationStatus.contributed;
-                    if( specification.pullNumber == undefined)
+                    if (specification.pullNumber == undefined)
                         log.log(LogLevelEnum.error, "Contributed Specification w/o pull request number: " + specification.filename)
                     ConfigSpecification.specifications.push(specification);
                 };
@@ -193,7 +199,7 @@ export class ConfigSpecification {
             });
 
             //debug("Number of specifications: " + ConfigSpecification.specifications.length);
-     
+
         }
         catch (error: any) {
             log.log(LogLevelEnum.error, "readyaml failed: " + error.message);
@@ -207,37 +213,37 @@ export class ConfigSpecification {
             specFunction(spec);
         }
     }
-    
-   static emptyTestData = {holdingRegisters:[],coils:[],analogInputs:[]}
+
+    static emptyTestData = { holdingRegisters: [], coils: [], analogInputs: [] }
     // removes non configuration data
     // Adds  testData array from Modbus values. They can be used to test specification
-    static toFileSpecification(modbusSpec: ImodbusSpecification, testdata:IModbusData =this.emptyTestData): IfileSpecification {
+    static toFileSpecification(modbusSpec: ImodbusSpecification, testdata: IModbusData = this.emptyTestData): IfileSpecification {
         let fileSpec: IfileSpecification = { ...modbusSpec, version: SPECIFICATION_VERSION, testdata: structuredClone(this.emptyTestData) }
         delete fileSpec['identification'];
         // delete (fileSpec as any)['status'];
         fileSpec.testdata = testdata;
         modbusSpec.entities.forEach(entity => {
             if (entity.modbusValue)
-                for (let idx = 0; idx < entity.modbusValue.length; idx++){
-                    switch( entity.registerType){
+                for (let idx = 0; idx < entity.modbusValue.length; idx++) {
+                    switch (entity.registerType) {
                         case ModbusRegisterType.AnalogInputs:
                             fileSpec.testdata.analogInputs?.push({ address: entity.modbusAddress + idx, value: entity.modbusValue[idx] })
                             break;
                         case ModbusRegisterType.HoldingRegister:
                             fileSpec.testdata.holdingRegisters?.push({ address: entity.modbusAddress + idx, value: entity.modbusValue[idx] })
-                            break;                    
+                            break;
                         case ModbusRegisterType.Coils:
                             fileSpec.testdata.coils?.push({ address: entity.modbusAddress + idx, value: entity.modbusValue[idx] })
                             break;
                     }
-                     entity.converter.registerTypes = []
+                    entity.converter.registerTypes = []
                 }
         })
-        if( fileSpec.testdata.analogInputs?.length == 0)
+        if (fileSpec.testdata.analogInputs?.length == 0)
             delete fileSpec.testdata.analogInputs
-        if( fileSpec.testdata.holdingRegisters?.length == 0)
+        if (fileSpec.testdata.holdingRegisters?.length == 0)
             delete fileSpec.testdata.holdingRegisters
-        if( fileSpec.testdata.coils?.length == 0)
+        if (fileSpec.testdata.coils?.length == 0)
             delete fileSpec.testdata.coils
         fileSpec.entities.forEach(entity => {
             delete (entity as any)['modbusValue']
@@ -290,9 +296,9 @@ export class ConfigSpecification {
         let newParentDir = path.dirname(newPath)
         if (!fs.existsSync(newParentDir))
             fs.mkdirSync(newParentDir, { recursive: true })
-        if(fs.existsSync(newPath))
-            fs.rmSync( newPath,{recursive:true})
-        if ( fs.existsSync(oldPath))
+        if (fs.existsSync(newPath))
+            fs.rmSync(newPath, { recursive: true })
+        if (fs.existsSync(oldPath))
             fs.renameSync(oldPath, newPath)
         this.readFilesYaml(specsDir, spec)
     }
@@ -305,12 +311,12 @@ export class ConfigSpecification {
             if (!spec.model || spec.model.length == 0)
                 delete spec.model
         })
-        if( spec.status != SpecificationStatus.contributed)
+        if (spec.status != SpecificationStatus.contributed)
             delete spec.pullNumber
         delete spec.publicSpecification
         delete (spec as any).identified
     }
-    changeContributionStatus(filename: string, newStatus: SpecificationStatus, pullNumber?:number) {
+    changeContributionStatus(filename: string, newStatus: SpecificationStatus, pullNumber?: number) {
         // moves Specification files to contribution directory
         let spec = ConfigSpecification.specifications.find(f => f.filename == filename)
         if (!spec)
@@ -318,17 +324,17 @@ export class ConfigSpecification {
         if (newStatus && newStatus == spec.status)
             return
         let newPath = this.getContributedSpecificationPath(spec)
-        let oldPath = this.getSpecificationPath(spec); 
+        let oldPath = this.getSpecificationPath(spec);
         let newDirectory = "contributed"
-        switch(newStatus){
+        switch (newStatus) {
             case SpecificationStatus.published:
                 oldPath = this.getContributedSpecificationPath(spec)
                 newPath = this.getPublicSpecificationPath(spec);
                 newDirectory = "public"
                 break;
             case SpecificationStatus.cloned:
-            case  SpecificationStatus.added:
-                if(spec.status == SpecificationStatus.contributed){
+            case SpecificationStatus.added:
+                if (spec.status == SpecificationStatus.contributed) {
                     let publicPath = this.getPublicSpecificationPath(spec)
                     if (fs.existsSync(publicPath))
                         newStatus = SpecificationStatus.cloned
@@ -344,33 +350,33 @@ export class ConfigSpecification {
         }
         // first move files, because spec.status must point to oldPath directory before calling it
         // move spec file from oldpath to newpath
-        if( newDirectory != "public"){
+        if (newDirectory != "public") {
             this.renameFilesPath(spec, spec.filename, newDirectory)
             fs.renameSync(oldPath, newPath)
         }
-        else{
-            if( fs.existsSync(oldPath))
-                fs.rmSync( oldPath,{recursive:true}) // public directory was already fetched
+        else {
+            if (fs.existsSync(oldPath))
+                fs.rmSync(oldPath, { recursive: true }) // public directory was already fetched
             let specDir = path.parse(oldPath).dir
 
             let filesDir = join(specDir, "files", spec.filename)
-            if( fs.existsSync(filesDir))
-                fs.rmSync( filesDir,{recursive:true}) // public directory was already fetched
+            if (fs.existsSync(filesDir))
+                fs.rmSync(filesDir, { recursive: true }) // public directory was already fetched
         }
 
         // Now change the status in ConfigSpecification.specifications array
         spec = ConfigSpecification.specifications.find(f => f.filename == filename)
-        if (spec){
+        if (spec) {
             spec.status = newStatus;
-            if(newStatus == SpecificationStatus.contributed){
+            if (newStatus == SpecificationStatus.contributed) {
                 (spec as IfileSpecification).pullNumber = pullNumber
-                this.writeSpecificationFromFileSpec(spec,spec.filename,pullNumber)                
+                this.writeSpecificationFromFileSpec(spec, spec.filename, pullNumber)
             }
         }
-            
+
     }
 
-    writeSpecificationFromFileSpec(spec: IfileSpecification, originalFilename: string | null, pullNumber?:number) {
+    writeSpecificationFromFileSpec(spec: IfileSpecification, originalFilename: string | null, pullNumber?: number) {
         if (spec.filename == "_new") {
             throw new Error("No or invalid filename for specification")
         }
@@ -397,13 +403,25 @@ export class ConfigSpecification {
             }
             else
                 throw new Error(spec.status + " !=" + SpecificationStatus.new + " and no originalfilename")
-            if( pullNumber != undefined){
+            if (spec.files.length && [SpecificationStatus.published, SpecificationStatus.contributed].includes(spec.status)) {
+                // cloning with attached files
+                let filespath = this.getPublicFilesPath(spec.filename)
+                if (SpecificationStatus.contributed == spec.status)
+                    filespath = this.getContributedFilesPath(spec.filename)
+                let localFilesPath = join(ConfigSpecification.yamlDir, this.getLocalFilesPath(spec.filename))
+                filespath = join(ConfigSpecification.yamlDir, filespath)
+                if (!fs.existsSync(localFilesPath) && fs.existsSync(filespath)) {
+                    fs.cpSync(filespath, localFilesPath, { recursive: true })
+                }
+            }
+
+            if (pullNumber != undefined) {
                 spec.status = SpecificationStatus.contributed
                 filename = contributedFilepath
-            }  
+            }
             else
                 if (!fs.existsSync(publicFilepath))
-                      spec.status = SpecificationStatus.added;
+                    spec.status = SpecificationStatus.added;
                 else
                     if (fs.existsSync(contributedFilepath)) {
                         spec.status = SpecificationStatus.contributed;
@@ -417,7 +435,7 @@ export class ConfigSpecification {
         let dir = path.dirname(filename);
         if (!fs.existsSync(dir))
             fs.mkdirSync(dir, { recursive: true });
-      
+
         // Update files list add files, which are not in list yet.
         let ns: any = structuredClone(spec)
         ns.version = SPECIFICATION_VERSION;
@@ -432,14 +450,14 @@ export class ConfigSpecification {
             ConfigSpecification.specifications.push(spec);
         return spec;
     }
-    writeSpecification(spec: ImodbusSpecification, testdata:IModbusData|undefined, onAfterSave:(filename:string)=>void|undefined, originalFilename: string | null): IfileSpecification {
-        let fileSpec: IfileSpecification = ConfigSpecification.toFileSpecification(spec,testdata)
-        this.writeSpecificationFromFileSpec(fileSpec,originalFilename)
-        if( onAfterSave)
+    writeSpecification(spec: ImodbusSpecification, testdata: IModbusData | undefined, onAfterSave: (filename: string) => void | undefined, originalFilename: string | null): IfileSpecification {
+        let fileSpec: IfileSpecification = ConfigSpecification.toFileSpecification(spec, testdata)
+        this.writeSpecificationFromFileSpec(fileSpec, originalFilename)
+        if (onAfterSave)
             onAfterSave(fileSpec.filename)
         return fileSpec;
     }
-   
+
     deleteSpecification(specfileName: string) {
         let found = false;
         for (let idx = 0; idx < ConfigSpecification.specifications.length; idx++) {
@@ -455,9 +473,9 @@ export class ConfigSpecification {
             }
         }
         if (!found && (!specfileName || specfileName != "_new"))
-            log.log(LogLevelEnum.notice,"specification not found for deletion " + specfileName);
+            log.log(LogLevelEnum.notice, "specification not found for deletion " + specfileName);
     }
-   
+
     static getSpecificationByName(name: string): IfileSpecification | undefined {
         return structuredClone(ConfigSpecification.specifications.find(spec => { return getSpecificationI18nName(spec, "en") === name }));
     }
@@ -475,7 +493,7 @@ export class ConfigSpecification {
             if (fs.existsSync(dir)) {
                 let files = fs.readdirSync(dir)
                 files.forEach(file => {
-                    let url = getSpecificationImageOrDocumentUrl(join(ConfigSpecification.yamlDir , "local"), "_new", file)
+                    let url = getSpecificationImageOrDocumentUrl(join(ConfigSpecification.yamlDir, "local"), "_new", file)
                     rc.files.push({
                         url: url,
                         fileLocation: FileLocation.Local,
