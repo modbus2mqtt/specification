@@ -156,7 +156,7 @@ export class M2mSpecification implements IspecificationValidator, Ispecification
     }
 
     private generateClonedContributionMessage(note: string | undefined, publicSpecification: IfileSpecification | undefined): string {
-        let rcmessage = (note ? note : "")
+        let rcmessage = ""
         this.notBackwardCompatible = false
         this.differentFilename = false
         if (publicSpecification) {
@@ -175,7 +175,6 @@ export class M2mSpecification implements IspecificationValidator, Ispecification
 
             if (note != undefined)
                 rcmessage = rcmessage + "\n" + note
-
         }
         return rcmessage;
     }
