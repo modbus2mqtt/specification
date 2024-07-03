@@ -3,7 +3,7 @@ import * as fs from 'fs';
 import * as path from 'path';
 import { join } from 'path';
 import { LogLevelEnum, Logger } from './log'
-import { EnumNumberFormat, FileLocation, IbaseSpecification, IimageAndDocumentUrl, ImodbusSpecification, Inumber, ModbusRegisterType, SPECIFICATION_VERSION, SpecificationFileUsage, SpecificationStatus, getSpecificationI18nName } from '@modbus2mqtt/specification.shared';
+import { EnumNumberFormat, FileLocation, IbaseSpecification, IimageAndDocumentUrl, ImodbusEntity, ImodbusSpecification, Inumber, ModbusRegisterType, SPECIFICATION_VERSION, SpecificationFileUsage, SpecificationStatus, getSpecificationI18nName } from '@modbus2mqtt/specification.shared';
 import { getBaseFilename } from '@modbus2mqtt/specification.shared';
 import { IModbusData, IfileSpecification } from './ifilespecification';
 import { ConverterMap } from './convertermap';
@@ -310,15 +310,22 @@ export class ConfigSpecification {
         spec.entities.forEach(e => {
             if (!e.icon || e.icon.length == 0)
                 delete e.icon
-            if (!spec.manufacturer || spec.manufacturer.length == 0)
-                delete spec.manufacturer
-            if (!spec.model || spec.model.length == 0)
-                delete spec.model
+            if ((e as any).identified != undefined)
+                delete (e as any).identified
+            if ((e as any).mqttValue != undefined)
+                delete (e as any).mqttValue
+            if ((e as any).modbusValue != undefined)
+                delete (e as any).modbusValue
         })
+        if (!spec.manufacturer || spec.manufacturer.length == 0)
+            delete spec.manufacturer
+        if (!spec.model || spec.model.length == 0)
+            delete spec.model
         if (spec.status != SpecificationStatus.contributed)
             delete spec.pullNumber
         delete spec.publicSpecification
         delete (spec as any).identified
+        delete (spec as any).status
     }
     changeContributionStatus(filename: string, newStatus: SpecificationStatus, pullNumber?: number) {
         // moves Specification files to contribution directory
@@ -387,7 +394,6 @@ export class ConfigSpecification {
         let publicFilepath = this.getPublicSpecificationPath(spec);
         let contributedFilepath = this.getContributedSpecificationPath(spec)
         let filename = this.getSpecificationPath(spec);
-        this.cleanSpecForWriting(spec)
         if (spec) {
             if (spec.status == SpecificationStatus.new) {
                 this.renameFilesPath(spec, "_new", "local")
@@ -407,7 +413,7 @@ export class ConfigSpecification {
             }
             else
                 throw new Error(spec.status + " !=" + SpecificationStatus.new + " and no originalfilename")
-            if (spec.files.length && [SpecificationStatus.published, SpecificationStatus.contributed].includes(spec.status)) {
+            if (spec.files.length && [SpecificationStatus.published].includes(spec.status)) {
                 // cloning with attached files
                 let filespath = this.getPublicFilesPath(spec.filename)
                 if (SpecificationStatus.contributed == spec.status)
@@ -418,7 +424,6 @@ export class ConfigSpecification {
                     fs.cpSync(filespath, localFilesPath, { recursive: true })
                 }
             }
-
             if (pullNumber != undefined) {
                 spec.status = SpecificationStatus.contributed
                 filename = contributedFilepath
@@ -442,6 +447,7 @@ export class ConfigSpecification {
 
         // Update files list add files, which are not in list yet.
         let ns: any = structuredClone(spec)
+        this.cleanSpecForWriting(ns)
         ns.version = SPECIFICATION_VERSION;
         delete ns.files
         let s = stringify(ns);
