@@ -11,7 +11,6 @@
   "type": "commonjs",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
-  "bin": "dist/src/validate.js",
   "author": "Volkmar Nissen <volkmar.nissen@gmail.com>",
   "license": "MIT",
   "repository": {
@@ -22,7 +21,10 @@
     "test": "jest",
     "build.modbusserver": "mkdir -p distsrv && tsc --project tsconfig.modbusserver.json && sed '/\"scripts\"/,/}[,]$/ d; /^$/d' package.json >package.dist",
     "build": "tsc && npx  @opengovsg/credits-generator"
-   },
+  },
+  "bin": {
+    "validate": "bin/validate.js"
+  },
   "dependencies": {
     "@modbus2mqtt/specification.shared": "0.7.0",
     "@octokit/rest": "^20.1.1",

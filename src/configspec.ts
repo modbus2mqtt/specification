@@ -171,6 +171,7 @@ export class ConfigSpecification {
             var publishedSpecifications: IfileSpecification[] = this.readspecifications(ConfigSpecification.yamlDir + "/public/specifications");
             var contributedSpecifications: IfileSpecification[] = this.readspecifications(ConfigSpecification.yamlDir + "/contributed/specifications");
             ConfigSpecification.specifications = this.readspecifications(ConfigSpecification.yamlDir + "/local/specifications");
+            // Iterate over local files
             ConfigSpecification.specifications.forEach((specification: IfileSpecification) => {
                 let published = publishedSpecifications.find(obj => { return obj.filename === specification.filename })
                 if (!published)
@@ -180,8 +181,9 @@ export class ConfigSpecification {
                     specification.publicSpecification = published
                 }
             });
+            // Iterate over contributed files 
             contributedSpecifications.forEach((specification: IfileSpecification) => {
-                if (-1 == ConfigSpecification.specifications.findIndex(obj => { return obj.filename === specification.filename })) {
+                if (-1 == ConfigSpecification.specifications.findIndex(obj => { return [SpecificationStatus.cloned, SpecificationStatus.added].includes(obj.status) && obj.filename === specification.filename })) {
                     let published = publishedSpecifications.find(obj => { return obj.filename === specification.filename })
                     if (published)
                         specification.publicSpecification = published;
@@ -189,7 +191,9 @@ export class ConfigSpecification {
                     if (specification.pullNumber == undefined)
                         log.log(LogLevelEnum.error, "Contributed Specification w/o pull request number: " + specification.filename)
                     ConfigSpecification.specifications.push(specification);
-                };
+                } else {
+                    log.log(LogLevelEnum.error, "Specification is local and contributed this is not supported: " + specification.filename)
+                }
             });
             publishedSpecifications.forEach((specification: IfileSpecification) => {
                 if (-1 == ConfigSpecification.specifications.findIndex(obj => { return obj.filename === specification.filename })) {

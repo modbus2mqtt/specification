@@ -19,6 +19,7 @@ import { Observable, Subject, Subscription, merge } from "rxjs";
 import { IpullRequest } from "./m2mGithubValidate";
 
 const log = new Logger('m2mSpecification')
+const debug = require('debug')('m2mspecification');
 
 const maxIdentifiedSpecs = 0
 export interface ImodbusValues {
@@ -155,7 +156,7 @@ export class M2mSpecification implements IspecificationValidator, Ispecification
     }
 
     private generateClonedContributionMessage(note: string | undefined, publicSpecification: IfileSpecification | undefined): string {
-        let rcmessage = this.generateAddedContributionMessage(note)
+        let rcmessage = (note ? note : "")
         this.notBackwardCompatible = false
         this.differentFilename = false
         if (publicSpecification) {
@@ -163,7 +164,7 @@ export class M2mSpecification implements IspecificationValidator, Ispecification
             let messages = this.isEqual(publicSpecification)
             messages.forEach(
                 message => {
-                    rcmessage = rcmessage + this.getMessageString(message)
+                    rcmessage = rcmessage + this.getMessageString(message) + "\n"
                 })
             // TODO Check backward compatibility
             if (this.notBackwardCompatible) {
@@ -283,6 +284,7 @@ export class M2mSpecification implements IspecificationValidator, Ispecification
                         try {
                             if (pullStatus.merged) {
                                 new ConfigSpecification().changeContributionStatus(spec.filename, SpecificationStatus.published, undefined)
+
                             }
                             else if (pullStatus.closed_at != null) {
                                 new ConfigSpecification().changeContributionStatus(spec.filename, SpecificationStatus.added, undefined)
@@ -781,9 +783,11 @@ export class M2mSpecification implements IspecificationValidator, Ispecification
         return testdata
     }
     startPolling(error: (e: any) => void): Observable<IpullRequest> | undefined {
+        debug("startPolling")
         let spec = (this.settings as IfileSpecification)
         let contribution = M2mSpecification.ghContributions.get(spec.filename)
         if (contribution == undefined && spec.pullNumber) {
+            debug("startPolling for pull Number " + spec.pullNumber)
             let c: Icontribution = {
                 pullRequest: spec.pullNumber,
                 monitor: new Subject<IpullRequest>(),
@@ -818,6 +822,7 @@ export class M2mSpecification implements IspecificationValidator, Ispecification
                     this.ghPollIntervalIndexCount = 0
                 }
                 this.closeContribution().then((pullStatus) => {
+                    debug("contribution closed for pull Number " + spec.pullNumber)
                     if (contribution) {
                         contribution.monitor.next(pullStatus)
                         if (pullStatus.closed || pullStatus.merged) {

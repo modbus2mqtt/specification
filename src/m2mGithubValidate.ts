@@ -135,7 +135,9 @@ export class M2mGithubValidate extends M2mGitHub {
                 merge_method: "squash"
             }).then(() => {
                 resolve()
-            }).catch(e => { e.step = "mergePullRequest"; reject(e) })
+            }).catch(e => {
+                e.step = "mergePullRequest"; reject(e)
+            })
         })
     }
 }

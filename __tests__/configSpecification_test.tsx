@@ -10,9 +10,11 @@ import { IModbusData } from '../src/ifilespecification';
 
 ConfigSpecification['yamlDir'] = yamlDir;
 ConfigSpecification.setMqttdiscoverylanguage("en")
-let testdata:IModbusData = {coils: [],
+let testdata: IModbusData = {
+    coils: [],
     holdingRegisters: [],
-    analogInputs: []}
+    analogInputs: []
+}
 const hostInfo: string = '{"result": "ok", "data": \
 {"devices": [ \
     {"name": "fb1", "sysfs": "/sys/devices/platform/3eaf0000.framebuffer/graphics/fb1", "dev_path": "/dev/fb1", "subsystem": "graphics", \
@@ -58,17 +60,17 @@ it('add new specification, add files, set filename', () => {
     let cfgSpec = new ConfigSpecification()
     cfgSpec.readYaml()
 
-    let fdir = join(ConfigSpecification.getLocalDir() , "/specifications/files" )
+    let fdir = join(ConfigSpecification.getLocalDir(), "/specifications/files")
     let fdirNew = join(fdir, "_new")
     let fdirAddSpecTest = join(fdir, "addspectest")
     fs.rmSync(fdirNew, { recursive: true, force: true })
     fs.rmSync(fdirAddSpecTest, { recursive: true, force: true })
-    fs.rmSync(join(ConfigSpecification.getLocalDir() , "/specifications/files", "addspectest.yaml"), { recursive: true, force: true })
+    fs.rmSync(join(ConfigSpecification.getLocalDir(), "/specifications/files", "addspectest.yaml"), { recursive: true, force: true })
     fs.mkdirSync(fdirNew, { recursive: true });
     fs.writeFileSync(join(fdirNew, 'test.pdf'), "test")
     let mspec = newSpecification;
     let spec = ConfigSpecification.toFileSpecification(mspec)
-    cfgSpec.appendSpecificationFile(spec.filename, 'test.pdf',SpecificationFileUsage.documentation)
+    cfgSpec.appendSpecificationFile(spec.filename, 'test.pdf', SpecificationFileUsage.documentation)
     fs.writeFileSync(join(fdirNew, 'test.jpg'), "test")
     cfgSpec.appendSpecificationFile(spec.filename, 'test.jpg', SpecificationFileUsage.img)
     let g = ConfigSpecification.getSpecificationByFilename("_new")
@@ -76,11 +78,11 @@ it('add new specification, add files, set filename', () => {
     expect(g!.files.find(f => f.url.endsWith('/_new/test.jpg'))).not.toBeNull()
     expect(g!.files.find(f => f.url.endsWith('/_new/test.pdf'))).not.toBeNull()
     expect(g).not.toBeNull()
-    cfgSpec.appendSpecificationFile(spec.filename, "test.jpg",SpecificationFileUsage.img)
+    cfgSpec.appendSpecificationFile(spec.filename, "test.jpg", SpecificationFileUsage.img)
     mspec.filename = "addspectest"
-    let wasCalled= false
-    
-    cfgSpec.writeSpecification(mspec, testdata,(filename)=>{
+    let wasCalled = false
+
+    cfgSpec.writeSpecification(mspec, testdata, (filename) => {
         expect(filename).toBe(mspec.filename)
         wasCalled = true
     }, null)
@@ -90,8 +92,8 @@ it('add new specification, add files, set filename', () => {
     expect(g).not.toBeNull()
     expect(g!.files.length).toBe(2)
     spec.filename = "modifiedfilename"
-    wasCalled= false
-    cfgSpec.writeSpecification(mspec, testdata,(filename)=>{
+    wasCalled = false
+    cfgSpec.writeSpecification(mspec, testdata, (filename) => {
         expect(filename).toBe(mspec.filename)
         wasCalled = true
     }, null)
@@ -99,23 +101,26 @@ it('add new specification, add files, set filename', () => {
 })
 it("contribution", () => {
     let cfg = new ConfigSpecification()
-     let localSpecdir = join(yamlDir, "local/specifications")
+    let localSpecdir = join(yamlDir, "local/specifications")
     let contributedSpecdir = join(yamlDir, "contributed/specifications")
-      fs.copyFileSync(join(localSpecdir, "waterleveltransmitter.yaml"), join(localSpecdir, "waterleveltransmitter1.yaml") )
+    fs.copyFileSync(join(localSpecdir, "waterleveltransmitter.yaml"), join(localSpecdir, "waterleveltransmitter1.yaml"))
     let filesDir = join(localSpecdir, "files/waterleveltransmitter1")
-    if(!fs.existsSync(filesDir))
+    if (!fs.existsSync(filesDir))
         fs.mkdirSync(filesDir)
-    fs.copyFileSync(join(localSpecdir, "files/waterleveltransmitter/files.yaml"), join(localSpecdir, "files/waterleveltransmitter1/files.yaml") )
+    fs.copyFileSync(join(localSpecdir, "files/waterleveltransmitter/files.yaml"), join(localSpecdir, "files/waterleveltransmitter1/files.yaml"))
     cfg.readYaml()
     let g = ConfigSpecification.getSpecificationByFilename("waterleveltransmitter1")
     expect(g).toBeDefined()
     expect(g?.status).toBe(SpecificationStatus.added)
- 
+
     expect(fs.existsSync(join(localSpecdir, "waterleveltransmitter1.yaml"))).toBeTruthy()
     expect(fs.existsSync(join(localSpecdir, "files/waterleveltransmitter1/files.yaml"))).toBeTruthy()
-    cfg.changeContributionStatus("waterleveltransmitter1",SpecificationStatus.contributed,1)
+    cfg.changeContributionStatus("waterleveltransmitter1", SpecificationStatus.contributed, 1)
     expect(fs.existsSync(join(contributedSpecdir, "waterleveltransmitter1.yaml"))).toBeTruthy()
     expect(fs.existsSync(join(contributedSpecdir, "files/waterleveltransmitter1/files.yaml"))).toBeTruthy()
+    expect(fs.existsSync(join(localSpecdir, "waterleveltransmitter1.yaml"))).toBeFalsy()
+    expect(fs.existsSync(join(localSpecdir, "files/waterleveltransmitter1/files.yaml"))).toBeFalsy()
+
     g = ConfigSpecification.getSpecificationByFilename("waterleveltransmitter1")
     expect(g?.status).toBe(SpecificationStatus.contributed)
     cfg.changeContributionStatus("waterleveltransmitter1", SpecificationStatus.added, undefined)
@@ -123,17 +128,17 @@ it("contribution", () => {
     expect(fs.existsSync(join(localSpecdir, "files/waterleveltransmitter1/files.yaml"))).toBeTruthy()
     g = ConfigSpecification.getSpecificationByFilename("waterleveltransmitter1")
     expect(g?.status).toBe(SpecificationStatus.added)
-    cfg.changeContributionStatus("waterleveltransmitter1",SpecificationStatus.contributed,1)
+    cfg.changeContributionStatus("waterleveltransmitter1", SpecificationStatus.contributed, 1)
     expect(fs.existsSync(join(contributedSpecdir, "waterleveltransmitter1.yaml"))).toBeTruthy()
     expect(fs.existsSync(join(contributedSpecdir, "files/waterleveltransmitter1/files.yaml"))).toBeTruthy()
     g = ConfigSpecification.getSpecificationByFilename("waterleveltransmitter1")
     expect(g?.status).toBe(SpecificationStatus.contributed)
-    cfg.changeContributionStatus("waterleveltransmitter1",SpecificationStatus.published,1)
+    cfg.changeContributionStatus("waterleveltransmitter1", SpecificationStatus.published, 1)
     g = ConfigSpecification.getSpecificationByFilename("waterleveltransmitter1")
-   
+
     expect(fs.existsSync(join(contributedSpecdir, "waterleveltransmitter1.yaml"))).toBeFalsy()
     expect(fs.existsSync(join(contributedSpecdir, "files/waterleveltransmitter1/files.yaml"))).toBeFalsy()
     expect(g?.status).toBe(SpecificationStatus.published)
-     
+
 })
 
