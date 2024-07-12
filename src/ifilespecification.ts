@@ -1,7 +1,9 @@
 import { Ispecification } from '@modbus2mqtt/specification.shared';
+import { IReadRegisterResultOrError } from './m2mspecification';
 export interface Idata {
-    address:number,
-    value:number|null,
+    address: number,
+    value?: number,
+    error?: string
 }
 export interface IModbusData {
     coils?: Idata[],
@@ -12,6 +14,6 @@ export interface IfileSpecification extends Ispecification {
     version: string;
     publicSpecification?: IfileSpecification; // used to compare cloned or contributed with public specs on the angular client.
     pullNumber?: number
-    pullUrl?:string
+    pullUrl?: string
     testdata: IModbusData
 }

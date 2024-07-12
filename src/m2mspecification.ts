@@ -22,16 +22,20 @@ const log = new Logger('m2mSpecification')
 const debug = require('debug')('m2mspecification');
 
 const maxIdentifiedSpecs = 0
+
+export interface IReadRegisterResultOrError {
+    result?: ReadRegisterResult, error?: Error
+}
 export interface ImodbusValues {
-    holdingRegisters: Map<number, ReadRegisterResult | null>,
-    analogInputs: Map<number, ReadRegisterResult | null>,
-    coils: Map<number, ReadRegisterResult | null>
+    holdingRegisters: Map<number, IReadRegisterResultOrError>;
+    analogInputs: Map<number, IReadRegisterResultOrError>;
+    coils: Map<number, IReadRegisterResultOrError>;
 }
 export function emptyModbusValues(): ImodbusValues {
     return {
-        holdingRegisters: new Map<number, ReadRegisterResult | null>(),
-        coils: new Map<number, ReadRegisterResult | null>(),
-        analogInputs: new Map<number, ReadRegisterResult | null>()
+        holdingRegisters: new Map<number, IReadRegisterResultOrError>(),
+        coils: new Map<number, IReadRegisterResultOrError>(),
+        analogInputs: new Map<number, IReadRegisterResultOrError>()
     }
 }
 interface Icontribution {
@@ -369,15 +373,12 @@ export class M2mSpecification implements IspecificationValidator, Ispecification
             (inSpec.testdata.holdingRegisters && inSpec.testdata.holdingRegisters.length > 0) ||
             (inSpec.testdata.coils && inSpec.testdata.coils.length > 0)
         )) {
-            inSpec.testdata.holdingRegisters?.forEach(data => {
-                valuesLocal!.holdingRegisters.set(data.address, data.value != null ? { data: [data.value], buffer: Buffer.from([data.value]) } : null)
-            })
-            inSpec.testdata.analogInputs?.forEach(data => {
-                valuesLocal!.analogInputs.set(data.address, data.value != null ? { data: [data.value], buffer: Buffer.from([data.value]) } : null)
-            })
-            inSpec.testdata.coils?.forEach(data => {
-                valuesLocal!.coils.set(data.address, data.value != null ? { data: [data.value], buffer: Buffer.from([data.value]) } : null)
-            })
+            M2mSpecification.copyFromTestData(inSpec.testdata.holdingRegisters, valuesLocal.holdingRegisters)
+            M2mSpecification.copyFromTestData(inSpec.testdata.analogInputs, valuesLocal.analogInputs)
+            M2mSpecification.copyFromTestData(inSpec.testdata.coils, valuesLocal.coils)
+        }
+        else {
+            // No values available neither testdata nor 
         }
 
         let rc: ImodbusSpecification = Object.assign(inSpec);
@@ -414,9 +415,9 @@ export class M2mSpecification implements IspecificationValidator, Ispecification
             if (converter) {
                 if (entity.modbusAddress != undefined) {
                     try {
-                        var data: ReadRegisterResult = { data: [], buffer: Buffer.from("") };
+                        var data: IReadRegisterResultOrError = { result: { data: [], buffer: Buffer.from("") } };
                         for (let address = entity.modbusAddress; address < entity.modbusAddress + converter.getModbusLength(entity); address++) {
-                            let value: ReadRegisterResult | undefined | null = undefined
+                            let value: IReadRegisterResultOrError | undefined = {}
 
                             switch (entity.registerType) {
                                 case ModbusRegisterType.AnalogInputs:
@@ -430,16 +431,20 @@ export class M2mSpecification implements IspecificationValidator, Ispecification
                                     break;
 
                             }
-                            if (value) {
-                                data.data = data.data.concat(value.data)
+                            if (value && value.result) {
+                                data.result!.data = data.result!.data.concat(value.result.data)
                                 if (address == entity.modbusAddress)
-                                    data.buffer = Buffer.concat([value.buffer])
+                                    data.result!.buffer = Buffer.concat([value.result!.buffer])
                                 else
-                                    data.buffer = Buffer.concat([data.buffer, value.buffer])
+                                    data.result!.buffer = Buffer.concat([data.result!.buffer, value.result!.buffer])
+                            }
+                            // Only the last error will survive
+                            if (value && value.error) {
+                                data.error = value.error
                             }
                         }
-                        if (data.data.length > 0) {
-                            let mqtt = converter.modbus2mqtt(spec, entity.id, data);
+                        if (data.result && data.result.data.length > 0) {
+                            let mqtt = converter.modbus2mqtt(spec, entity.id, data.result);
                             let identified = IdentifiedStates.unknown;
                             if (entity.converterParameters)
                                 if ((entity.converter.name === "number")) {
@@ -473,13 +478,18 @@ export class M2mSpecification implements IspecificationValidator, Ispecification
                                 }
                             rc.identified = identified;
                             rc.mqttValue = mqtt;
-                            rc.modbusValue = data.data;
+                            rc.modbusValue = data.result.data;
+
                         }
                         else {
                             rc.identified = IdentifiedStates.notIdentified;
                             rc.mqttValue = "";
                             rc.modbusValue = [];
                         }
+                        if (data.error) {
+                            rc.modbusError = data.error?.message
+                        }
+
                     } catch (error) {
                         log.log(LogLevelEnum.error, error);
                     }
@@ -500,7 +510,15 @@ export class M2mSpecification implements IspecificationValidator, Ispecification
             throw new Error(msg)
         }
     }
-
+    private static copyFromTestData(testdata: Idata[] | undefined, data: Map<number, IReadRegisterResultOrError>) {
+        if (testdata)
+            testdata.forEach((mv) => {
+                if (mv.value != undefined)
+                    data.set(mv.address, { result: { data: [mv.value], buffer: Buffer.from([mv.value]) }, error: new Error(mv.error) })
+                else
+                    data.set(mv.address, { error: new Error(mv.error) })
+            })
+    }
 
     validateIdentification(language: string): IvalidateIdentificationResult[] {
         let identifiedSpecs: IvalidateIdentificationResult[] = [];
@@ -510,16 +528,12 @@ export class M2mSpecification implements IspecificationValidator, Ispecification
             fSettings = (this.settings as IfileSpecification)
         else
             fSettings = ConfigSpecification.toFileSpecification(this.settings as ImodbusSpecification)
-
-        fSettings.testdata.holdingRegisters?.forEach(data => {
-            values.holdingRegisters.set(data.address, data.value != null ? { data: [data.value], buffer: Buffer.from([data.value]) } : null)
-        })
-        fSettings.testdata.analogInputs?.forEach(data => {
-            values.analogInputs.set(data.address, data.value != null ? { data: [data.value], buffer: Buffer.from([data.value]) } : null)
-        })
-        fSettings.testdata.coils?.forEach(data => {
-            values.coils.set(data.address, data.value != null ? { data: [data.value], buffer: Buffer.from([data.value]) } : null)
-        })
+        if (fSettings.testdata.holdingRegisters)
+            M2mSpecification.copyFromTestData(fSettings.testdata.holdingRegisters, values.holdingRegisters)
+        if (fSettings.testdata.analogInputs)
+            M2mSpecification.copyFromTestData(fSettings.testdata.analogInputs, values.analogInputs)
+        if (fSettings.testdata.coils)
+            M2mSpecification.copyFromTestData(fSettings.testdata.coils, values.coils)
         new ConfigSpecification().filterAllSpecifications((spec) => {
             if ([SpecificationStatus.cloned, SpecificationStatus.published, SpecificationStatus.contributed].includes(spec.status)) {
                 var mSpec: ImodbusSpecification | undefined = undefined
@@ -564,7 +578,7 @@ export class M2mSpecification implements IspecificationValidator, Ispecification
         })
         return identifiedSpecs;
     }
-    allNullDataMatch(datas: Idata[] | undefined, values: Map<number, ReadRegisterResult | null>): boolean {
+    allNullDataMatch(datas: Idata[] | undefined, values: Map<number, IReadRegisterResultOrError>): boolean {
         let rc = true
         if (datas)
             datas.forEach(data => {
@@ -764,21 +778,27 @@ export class M2mSpecification implements IspecificationValidator, Ispecification
             return filename.substring(idx + 1);
         return filename;
     }
-    private static copyNullValues(slaveData: Map<number, ReadRegisterResult | null>, testdata: (Idata | null)[]) {
+    private static copyEmptyValues(slaveData: Map<number, IReadRegisterResultOrError>, testdata: Map<number, IReadRegisterResultOrError>) {
         for (let address of slaveData.keys()) {
             let value = slaveData.get(address)
-            if (value == null)
-                testdata.push({ address: address, value: null })
+            if (value == undefined)
+                testdata.set(address, { error: new Error("No data available") })
+            else
+                testdata.set(address, value)
         }
     }
-    static getEmptyModbusAddressesFromSlaveToTestdata(slaveAddresses: ImodbusValues): IModbusData {
-        let testdata: IModbusData = { holdingRegisters: [], analogInputs: [], coils: [] }
+    static getEmptyModbusAddressesFromSlaveToTestdata(slaveAddresses: ImodbusValues): ImodbusValues {
+        let testdata: ImodbusValues = {
+            holdingRegisters: new Map<number, IReadRegisterResultOrError>(),
+            analogInputs: new Map<number, IReadRegisterResultOrError>(),
+            coils: new Map<number, IReadRegisterResultOrError>()
+        }
         if (testdata.holdingRegisters)
-            M2mSpecification.copyNullValues(slaveAddresses.holdingRegisters, testdata.holdingRegisters)
+            M2mSpecification.copyEmptyValues(slaveAddresses.holdingRegisters, testdata.holdingRegisters)
         if (testdata.analogInputs)
-            M2mSpecification.copyNullValues(slaveAddresses.analogInputs, testdata.analogInputs)
+            M2mSpecification.copyEmptyValues(slaveAddresses.analogInputs, testdata.analogInputs)
         if (testdata.coils)
-            M2mSpecification.copyNullValues(slaveAddresses.coils, testdata.coils)
+            M2mSpecification.copyEmptyValues(slaveAddresses.coils, testdata.coils)
         return testdata
     }
     startPolling(error: (e: any) => void): Observable<IpullRequest> | undefined {

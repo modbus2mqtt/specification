@@ -37,7 +37,7 @@ let spec: IfileSpecification = {
     "entities": [
         {
             "id": 1, mqttname: "mqtt",
-            "converter": { name: "sensor" as Converters, registerTypes: [] }, "modbusAddress": 3, registerType: ModbusRegisterType.HoldingRegister, readonly: true, "icon": "", "converterParameters": { "multiplier": 0.1, "offset": 0, "uom": "cm", "identification": { "min": 0, "max": 200 } }
+            "converter": { name: "number" as Converters, registerTypes: [] }, "modbusAddress": 3, registerType: ModbusRegisterType.HoldingRegister, readonly: true, "icon": "", "converterParameters": { "multiplier": 0.1, "offset": 0, "uom": "cm", "identification": { "min": 0, "max": 200 } }
         },
         { id: 2, mqttname: "mqtt2", "converter": { name: "select" as Converters, registerTypes: [] }, "modbusAddress": 4, registerType: ModbusRegisterType.HoldingRegister, readonly: true, "icon": "", "converterParameters": { "optionModbusValues": [1, 2, 3] } },
         { id: 3, mqttname: "mqtt3", "converter": { name: "select" as Converters, registerTypes: [] }, "modbusAddress": 5, registerType: ModbusRegisterType.HoldingRegister, readonly: false, "icon": "", "converterParameters": { "optionModbusValues": [0, 1, 2, 3] } }],
@@ -65,7 +65,9 @@ let spec: IfileSpecification = {
             { address: 3, value: 1 },
             { address: 4, value: 1 },
             { address: 5, value: 1 },
-            { address: 100, value: null }
+            {
+                address: 100, error: "No data available"
+            }
         ]
     }
 }
@@ -92,8 +94,8 @@ describe("simple tests", () => {
         let b1 = Buffer.allocUnsafe(2);
         b1.writeInt16BE(v)
 
-        values.holdingRegisters.set(5, { data: [v], buffer: b })
-        values.holdingRegisters.set(6, { data: [v], buffer: b1 })
+        values.holdingRegisters.set(5, { result: { data: [v], buffer: b } })
+        values.holdingRegisters.set(6, { result: { data: [v], buffer: b1 } })
 
 
         let e = M2mSpecification.copyModbusDataToEntity(tspec, 2, values)

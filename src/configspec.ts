@@ -5,9 +5,9 @@ import { join } from 'path';
 import { LogLevelEnum, Logger } from './log'
 import { EnumNumberFormat, FileLocation, IbaseSpecification, IimageAndDocumentUrl, ImodbusEntity, ImodbusSpecification, Inumber, ModbusRegisterType, SPECIFICATION_VERSION, SpecificationFileUsage, SpecificationStatus, getSpecificationI18nName } from '@modbus2mqtt/specification.shared';
 import { getBaseFilename } from '@modbus2mqtt/specification.shared';
-import { IModbusData, IfileSpecification } from './ifilespecification';
+import { IModbusData, Idata, IfileSpecification } from './ifilespecification';
 import { ConverterMap } from './convertermap';
-import { M2mSpecification } from './m2mspecification';
+import { IReadRegisterResultOrError, ImodbusValues, M2mSpecification } from './m2mspecification';
 import { Migrator } from './migrator';
 import { M2mGitHub } from './m2mgithub';
 
@@ -118,6 +118,7 @@ export class ConfigSpecification {
             }
         })
     }
+
     private readspecifications(directory: string): IfileSpecification[] {
         var rc: IfileSpecification[] = [];
         if (!fs.existsSync(directory)) {
@@ -134,7 +135,6 @@ export class ConfigSpecification {
                     if (o.version != SPECIFICATION_VERSION) {
                         o = new Migrator().migrate(o)
                     }
-
                     o.filename = newfn;
                     this.readFilesYaml(directory, o)
                     o.entities.forEach(entity => {
@@ -219,30 +219,45 @@ export class ConfigSpecification {
     }
 
     static emptyTestData = { holdingRegisters: [], coils: [], analogInputs: [] }
+    private static copyToTestData(data: Map<number, IReadRegisterResultOrError>, testdata?: Idata[]) {
+        if (testdata)
+            data.forEach((mv, address) => {
+                testdata.push({ address: address, value: mv.result?.data[0], error: mv.error?.message })
+            })
+
+    }
     // removes non configuration data
     // Adds  testData array from Modbus values. They can be used to test specification
-    static toFileSpecification(modbusSpec: ImodbusSpecification, testdata: IModbusData = this.emptyTestData): IfileSpecification {
+    static toFileSpecification(modbusSpec: ImodbusSpecification, modbusValues?: ImodbusValues): IfileSpecification {
         let fileSpec: IfileSpecification = { ...modbusSpec, version: SPECIFICATION_VERSION, testdata: structuredClone(this.emptyTestData) }
         delete fileSpec['identification'];
         // delete (fileSpec as any)['status'];
-        fileSpec.testdata = testdata;
-        modbusSpec.entities.forEach(entity => {
-            if (entity.modbusValue)
-                for (let idx = 0; idx < entity.modbusValue.length; idx++) {
-                    switch (entity.registerType) {
-                        case ModbusRegisterType.AnalogInputs:
-                            fileSpec.testdata.analogInputs?.push({ address: entity.modbusAddress + idx, value: entity.modbusValue[idx] })
-                            break;
-                        case ModbusRegisterType.HoldingRegister:
-                            fileSpec.testdata.holdingRegisters?.push({ address: entity.modbusAddress + idx, value: entity.modbusValue[idx] })
-                            break;
-                        case ModbusRegisterType.Coils:
-                            fileSpec.testdata.coils?.push({ address: entity.modbusAddress + idx, value: entity.modbusValue[idx] })
-                            break;
+        if (modbusValues) {
+            fileSpec.testdata = this.emptyTestData
+            ConfigSpecification.copyToTestData(modbusValues.analogInputs, fileSpec.testdata.analogInputs)
+            ConfigSpecification.copyToTestData(modbusValues.coils, fileSpec.testdata.coils)
+            ConfigSpecification.copyToTestData(modbusValues.holdingRegisters, fileSpec.testdata.holdingRegisters)
+        }
+        else {
+            modbusSpec.entities.forEach(entity => {
+                if (entity.modbusValue)
+                    for (let idx = 0; idx < entity.modbusValue.length; idx++) {
+                        switch (entity.registerType) {
+                            case ModbusRegisterType.AnalogInputs:
+                                fileSpec.testdata.analogInputs?.push({ address: entity.modbusAddress + idx, value: entity.modbusValue[idx], error: entity.modbusError })
+                                break;
+                            case ModbusRegisterType.HoldingRegister:
+                                fileSpec.testdata.holdingRegisters?.push({ address: entity.modbusAddress + idx, value: entity.modbusValue[idx], error: entity.modbusError })
+                                break;
+                            case ModbusRegisterType.Coils:
+                                fileSpec.testdata.coils?.push({ address: entity.modbusAddress + idx, value: entity.modbusValue[idx], error: entity.modbusError })
+                                break;
+                        }
+                        entity.converter.registerTypes = []
                     }
-                    entity.converter.registerTypes = []
-                }
-        })
+            })
+
+        }
         if (fileSpec.testdata.analogInputs?.length == 0)
             delete fileSpec.testdata.analogInputs
         if (fileSpec.testdata.holdingRegisters?.length == 0)
@@ -306,6 +321,7 @@ export class ConfigSpecification {
             fs.renameSync(oldPath, newPath)
         this.readFilesYaml(specsDir, spec)
     }
+
     private cleanSpecForWriting(spec: IfileSpecification): void {
         spec.entities.forEach(e => {
             if (!e.icon || e.icon.length == 0)
@@ -326,6 +342,7 @@ export class ConfigSpecification {
         delete spec.publicSpecification
         delete (spec as any).identified
         delete (spec as any).status
+
     }
     changeContributionStatus(filename: string, newStatus: SpecificationStatus, pullNumber?: number) {
         // moves Specification files to contribution directory
@@ -460,7 +477,7 @@ export class ConfigSpecification {
             ConfigSpecification.specifications.push(spec);
         return spec;
     }
-    writeSpecification(spec: ImodbusSpecification, testdata: IModbusData | undefined, onAfterSave: (filename: string) => void | undefined, originalFilename: string | null): IfileSpecification {
+    writeSpecification(spec: ImodbusSpecification, testdata: ImodbusValues, onAfterSave: (filename: string) => void | undefined, originalFilename: string | null): IfileSpecification {
         let fileSpec: IfileSpecification = ConfigSpecification.toFileSpecification(spec, testdata)
         this.writeSpecificationFromFileSpec(fileSpec, originalFilename)
         if (onAfterSave)

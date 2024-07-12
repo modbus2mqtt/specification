@@ -3,17 +3,18 @@ import { ConfigSpecification } from '../src/configspec';
 import * as fs from 'fs';
 import { join } from 'path';
 import { yamlDir } from './configsbase';
-import { SpecificationFileUsage, SpecificationStatus, getFileNameFromName, getSpecificationI18nName, newSpecification } from '@modbus2mqtt/specification.shared';
-import { emptyModbusValues } from '../src/m2mspecification';
-import { IModbusData } from '../src/ifilespecification';
+import { SPECIFICATION_VERSION, SpecificationFileUsage, SpecificationStatus, getFileNameFromName, getSpecificationI18nName, newSpecification } from '@modbus2mqtt/specification.shared';
+import { IReadRegisterResultOrError, emptyModbusValues } from '../src/m2mspecification';
+import { IModbusData, } from '../src/ifilespecification';
+import { ImodbusValues } from '../dist';
 
 
 ConfigSpecification['yamlDir'] = yamlDir;
 ConfigSpecification.setMqttdiscoverylanguage("en")
-let testdata: IModbusData = {
-    coils: [],
-    holdingRegisters: [],
-    analogInputs: []
+let testdata: ImodbusValues = {
+    coils: new Map<number, IReadRegisterResultOrError>(),
+    holdingRegisters: new Map<number, IReadRegisterResultOrError>(),
+    analogInputs: new Map<number, IReadRegisterResultOrError>()
 }
 const hostInfo: string = '{"result": "ok", "data": \
 {"devices": [ \
@@ -35,6 +36,22 @@ it('check device type status', () => {
     expect(ConfigSpecification.getSpecificationByFilename('waterleveltransmitter')!.status).toBe(SpecificationStatus.cloned);
     expect(ConfigSpecification.getSpecificationByFilename('deyeinverter')!.status).toBe(SpecificationStatus.published);
     expect(ConfigSpecification.getSpecificationByFilename('newDevice')!.status).toBe(SpecificationStatus.added);
+});
+it('write/Migrate', () => {
+    fs.copyFileSync(join(ConfigSpecification.yamlDir, "local/specifications", "waterleveltransmitter.yaml"),
+        join(ConfigSpecification.yamlDir, "local/specifications", "waterleveltransmitter1.yaml"))
+
+    const configSpec = new ConfigSpecification();
+    configSpec.readYaml();
+    let wl = ConfigSpecification.getSpecificationByFilename('waterleveltransmitter')!
+    configSpec.writeSpecificationFromFileSpec(wl, wl.filename)
+    configSpec.readYaml();
+    wl = ConfigSpecification.getSpecificationByFilename('waterleveltransmitter')!
+    expect(wl.version).toBe(SPECIFICATION_VERSION)
+    fs.copyFileSync(join(ConfigSpecification.yamlDir, "local/specifications", "waterleveltransmitter1.yaml"),
+        join(ConfigSpecification.yamlDir, "local/specifications", "waterleveltransmitter.yaml"))
+    fs.unlinkSync(join(ConfigSpecification.yamlDir, "local/specifications", "waterleveltransmitter1.yaml"))
+
 });
 
 
