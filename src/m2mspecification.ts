@@ -603,6 +603,8 @@ export class M2mSpecification implements IspecificationValidator, Ispecification
             case ModbusRegisterType.Coils:
                 return 15
             default:
+                if ([15, 16].includes(functionCode as number))
+                    return functionCode as number
                 throw new Error("No Registertype available or Registertype is not writable ")
         }
     }
