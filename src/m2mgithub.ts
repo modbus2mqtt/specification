@@ -6,6 +6,7 @@ import { existsSync } from "fs";
 import { join } from "path";
 import { Subject, first } from "rxjs";
 import * as fs from 'fs';
+import { ConfigSpecification } from "./configspec";
 
 const debug = require('debug')('m2mgithub');
 export const githubPublicNames = {
@@ -179,6 +180,7 @@ export class M2mGitHub {
             log.log(LogLevelEnum.notice, execSync("git pull", { cwd: this.publicRoot }))
         else
             log.log(LogLevelEnum.notice, execSync("git clone https://github.com/" + githubPublicNames.publicModbus2mqttOwner + "/" + githubPublicNames.modbus2mqttRepo + ".git " + this.publicRoot))
+        new ConfigSpecification().readYaml()
     }
     static getPullRequestUrl(pullNumber: number): string {
         return `https://github.com/${githubPublicNames.publicModbus2mqttOwner}/${githubPublicNames.modbus2mqttRepo}/pull/${pullNumber}`
