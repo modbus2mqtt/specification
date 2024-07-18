@@ -10,3 +10,4 @@ ssl/
 **/.DS*_Store
 package-lock.json
 tv.sh
+__tests__/yaml-dir/publictest
