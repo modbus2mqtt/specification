@@ -3,7 +3,8 @@ import { M2mGitHub } from "../src/m2mgithub";
 import { yamlDir } from "./configsbase";
 import { join } from "path";
 import { ConfigSpecification } from '../src/configspec';
-import { beforeAll } from '@jest/globals';
+import { beforeAll, expect, it } from '@jest/globals';
+import * as fs from 'fs'
 
 
 const debug = Debug("m2mgithub");
@@ -50,10 +51,12 @@ function testWait(github: M2mGitHub, done: any) {
     })
 }
 it('init with no github token', done => {
-    let github = new M2mGitHub(null, join(yamlDir, "publictest"))
+    let publictestdir = join(yamlDir, "publictest")
+    let github = new M2mGitHub(null, publictestdir)
     github['ownOwner'] = "modbus2mqtt"
     github.init().then((hasGhToken) => {
         expect(hasGhToken).toBeFalsy()
+        fs.rmSync(publictestdir, { recursive: true })
         done()
     }).
         catch(() => {

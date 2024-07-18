@@ -3,7 +3,7 @@ import { ConfigSpecification } from '../src/configspec';
 import { ImodbusValues, M2mSpecification, emptyModbusValues } from '../src/m2mspecification';
 import { Converters, IdentifiedStates } from '@modbus2mqtt/specification.shared';
 import * as fs from 'fs'
-import { yamlDir } from './configsbase';
+import { singleMutex, yamlDir } from './configsbase';
 import { Mutex } from 'async-mutex'
 import { IfileSpecification } from '../src/ifilespecification';
 import { it, expect, beforeAll, describe, afterAll } from '@jest/globals';
@@ -15,7 +15,6 @@ declare global {
         }
     }
 }
-let singleMutex = new Mutex()
 ConfigSpecification.setMqttdiscoverylanguage("en", process.env.GITHUB_TOKEN)
 ConfigSpecification['yamlDir'] = yamlDir;
 

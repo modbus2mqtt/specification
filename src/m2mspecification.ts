@@ -335,17 +335,19 @@ export class M2mSpecification implements IspecificationValidator, Ispecification
 
     validate(language: string): Imessage[] {
         let rc = this.validateSpecification(language, true)
-        let identfied = this.validateIdentification(language)
-        if (identfied.length > maxIdentifiedSpecs)
-            rc.push({ type: MessageTypes.identifiedByOthers, category: MessageCategories.validateOtherIdentification, additionalInformation: identfied })
+        if ((this.settings as ImodbusSpecification).entities.length > 0) {
+            let identfied = this.validateIdentification(language)
+            if (identfied.length > maxIdentifiedSpecs)
+                rc.push({ type: MessageTypes.identifiedByOthers, category: MessageCategories.validateOtherIdentification, additionalInformation: identfied })
+            let mSpec = M2mSpecification.fileToModbusSpecification(this.settings as IfileSpecification)
+            if (mSpec.identified != undefined)
+                mSpec = M2mSpecification.fileToModbusSpecification(this.settings as IfileSpecification)
+            if (mSpec.identified != IdentifiedStates.identified)
+                rc.push({ type: MessageTypes.notIdentified, category: MessageCategories.validateSpecification })
+        }
 
         if (!this.validateUniqueName(language))
             rc.push({ type: MessageTypes.nonUniqueName, category: MessageCategories.validateSpecification })
-        let mSpec = M2mSpecification.fileToModbusSpecification(this.settings as IfileSpecification)
-        if (mSpec.identified != undefined)
-            mSpec = M2mSpecification.fileToModbusSpecification(this.settings as IfileSpecification)
-        if (mSpec.identified != IdentifiedStates.identified)
-            rc.push({ type: MessageTypes.notIdentified, category: MessageCategories.validateSpecification })
         return rc;
     }
 
@@ -766,9 +768,9 @@ export class M2mSpecification implements IspecificationValidator, Ispecification
     validateSpecification(language: string, forContribution: boolean = false): Imessage[] {
         let msgs: Imessage[] = []
         let spec = this.settings as ImodbusSpecification
+        this.validateFiles(msgs)
         if (spec.entities.length == 0)
             msgs.push({ type: MessageTypes.noEntity, category: MessageCategories.validateEntity })
-        this.validateFiles(msgs)
         validateTranslation(spec, language, msgs)
         if (forContribution)
             validateTranslation(spec, "en", msgs)
@@ -808,7 +810,7 @@ export class M2mSpecification implements IspecificationValidator, Ispecification
         let spec = (this.settings as IfileSpecification)
         let contribution = M2mSpecification.ghContributions.get(spec.filename)
         if (contribution == undefined && spec.pullNumber) {
-            debug("startPolling for pull Number " + spec.pullNumber)
+            log.log(LogLevelEnum.notice, "startPolling for pull Number " + spec.pullNumber)
             let c: Icontribution = {
                 pullRequest: spec.pullNumber,
                 monitor: new Subject<IpullRequest>(),

@@ -2,11 +2,12 @@ import { it, expect } from '@jest/globals';
 import { ConfigSpecification } from '../src/configspec';
 import * as fs from 'fs';
 import { join } from 'path';
-import { yamlDir } from './configsbase';
+import { singleMutex, yamlDir } from './configsbase';
 import { SPECIFICATION_VERSION, SpecificationFileUsage, SpecificationStatus, getFileNameFromName, getSpecificationI18nName, newSpecification } from '@modbus2mqtt/specification.shared';
 import { IReadRegisterResultOrError, emptyModbusValues } from '../src/m2mspecification';
 import { IModbusData, } from '../src/ifilespecification';
 import { ImodbusValues } from '../dist';
+import { Mutex } from 'async-mutex';
 
 
 ConfigSpecification['yamlDir'] = yamlDir;
@@ -117,45 +118,121 @@ it('add new specification, add files, set filename', () => {
     cfgSpec.deleteSpecification("addspectest")
 })
 it("contribution", () => {
-    let cfg = new ConfigSpecification()
-    let localSpecdir = join(yamlDir, "local/specifications")
-    let contributedSpecdir = join(yamlDir, "contributed/specifications")
-    fs.copyFileSync(join(localSpecdir, "waterleveltransmitter.yaml"), join(localSpecdir, "waterleveltransmitter1.yaml"))
-    let filesDir = join(localSpecdir, "files/waterleveltransmitter1")
-    if (!fs.existsSync(filesDir))
-        fs.mkdirSync(filesDir)
-    fs.copyFileSync(join(localSpecdir, "files/waterleveltransmitter/files.yaml"), join(localSpecdir, "files/waterleveltransmitter1/files.yaml"))
-    cfg.readYaml()
-    let g = ConfigSpecification.getSpecificationByFilename("waterleveltransmitter1")
-    expect(g).toBeDefined()
-    expect(g?.status).toBe(SpecificationStatus.added)
+    singleMutex.runExclusive(() => {
+        let cfg = new ConfigSpecification()
+        let localSpecdir = join(yamlDir, "local/specifications")
+        let contributedSpecdir = join(yamlDir, "contributed/specifications")
+        fs.copyFileSync(join(localSpecdir, "waterleveltransmitter.yaml"), join(localSpecdir, "waterleveltransmitter1.yaml"))
+        let filesDir = join(localSpecdir, "files/waterleveltransmitter1")
+        let publicSpecdir = join(yamlDir, "public/specifications")
 
-    expect(fs.existsSync(join(localSpecdir, "waterleveltransmitter1.yaml"))).toBeTruthy()
-    expect(fs.existsSync(join(localSpecdir, "files/waterleveltransmitter1/files.yaml"))).toBeTruthy()
-    cfg.changeContributionStatus("waterleveltransmitter1", SpecificationStatus.contributed, 1)
-    expect(fs.existsSync(join(contributedSpecdir, "waterleveltransmitter1.yaml"))).toBeTruthy()
-    expect(fs.existsSync(join(contributedSpecdir, "files/waterleveltransmitter1/files.yaml"))).toBeTruthy()
-    expect(fs.existsSync(join(localSpecdir, "waterleveltransmitter1.yaml"))).toBeFalsy()
-    expect(fs.existsSync(join(localSpecdir, "files/waterleveltransmitter1/files.yaml"))).toBeFalsy()
+        cleanWaterLevelTransmitter1(publicSpecdir)
+        cleanWaterLevelTransmitter1(contributedSpecdir)
+        if (!fs.existsSync(filesDir))
+            fs.mkdirSync(filesDir)
+        fs.copyFileSync(join(localSpecdir, "files/waterleveltransmitter/files.yaml"), join(localSpecdir, "files/waterleveltransmitter1/files.yaml"))
+        cfg.readYaml()
+        let g = ConfigSpecification.getSpecificationByFilename("waterleveltransmitter1")
+        expect(g).toBeDefined()
+        expect(g?.status).toBe(SpecificationStatus.added)
 
-    g = ConfigSpecification.getSpecificationByFilename("waterleveltransmitter1")
-    expect(g?.status).toBe(SpecificationStatus.contributed)
-    cfg.changeContributionStatus("waterleveltransmitter1", SpecificationStatus.added, undefined)
-    expect(fs.existsSync(join(localSpecdir, "waterleveltransmitter1.yaml"))).toBeTruthy()
-    expect(fs.existsSync(join(localSpecdir, "files/waterleveltransmitter1/files.yaml"))).toBeTruthy()
-    g = ConfigSpecification.getSpecificationByFilename("waterleveltransmitter1")
-    expect(g?.status).toBe(SpecificationStatus.added)
-    cfg.changeContributionStatus("waterleveltransmitter1", SpecificationStatus.contributed, 1)
-    expect(fs.existsSync(join(contributedSpecdir, "waterleveltransmitter1.yaml"))).toBeTruthy()
-    expect(fs.existsSync(join(contributedSpecdir, "files/waterleveltransmitter1/files.yaml"))).toBeTruthy()
-    g = ConfigSpecification.getSpecificationByFilename("waterleveltransmitter1")
-    expect(g?.status).toBe(SpecificationStatus.contributed)
-    cfg.changeContributionStatus("waterleveltransmitter1", SpecificationStatus.published, 1)
-    g = ConfigSpecification.getSpecificationByFilename("waterleveltransmitter1")
+        expect(fs.existsSync(join(localSpecdir, "waterleveltransmitter1.yaml"))).toBeTruthy()
+        expect(fs.existsSync(join(localSpecdir, "files/waterleveltransmitter1/files.yaml"))).toBeTruthy()
+        cfg.changeContributionStatus("waterleveltransmitter1", SpecificationStatus.contributed, 1)
+        expect(fs.existsSync(join(contributedSpecdir, "waterleveltransmitter1.yaml"))).toBeTruthy()
+        expect(fs.existsSync(join(contributedSpecdir, "files/waterleveltransmitter1/files.yaml"))).toBeTruthy()
+        expect(fs.existsSync(join(localSpecdir, "waterleveltransmitter1.yaml"))).toBeFalsy()
+        expect(fs.existsSync(join(localSpecdir, "files/waterleveltransmitter1/files.yaml"))).toBeFalsy()
 
-    expect(fs.existsSync(join(contributedSpecdir, "waterleveltransmitter1.yaml"))).toBeFalsy()
-    expect(fs.existsSync(join(contributedSpecdir, "files/waterleveltransmitter1/files.yaml"))).toBeFalsy()
-    expect(g?.status).toBe(SpecificationStatus.published)
+        g = ConfigSpecification.getSpecificationByFilename("waterleveltransmitter1")
+        expect(g?.status).toBe(SpecificationStatus.contributed)
+        cfg.changeContributionStatus("waterleveltransmitter1", SpecificationStatus.added, undefined)
+        expect(fs.existsSync(join(localSpecdir, "waterleveltransmitter1.yaml"))).toBeTruthy()
+        expect(fs.existsSync(join(localSpecdir, "files/waterleveltransmitter1/files.yaml"))).toBeTruthy()
+        g = ConfigSpecification.getSpecificationByFilename("waterleveltransmitter1")
+        expect(g?.status).toBe(SpecificationStatus.added)
+        cfg.changeContributionStatus("waterleveltransmitter1", SpecificationStatus.contributed, 1)
+        expect(fs.existsSync(join(contributedSpecdir, "waterleveltransmitter1.yaml"))).toBeTruthy()
+        expect(fs.existsSync(join(contributedSpecdir, "files/waterleveltransmitter1/files.yaml"))).toBeTruthy()
+        g = ConfigSpecification.getSpecificationByFilename("waterleveltransmitter1")
+        expect(g?.status).toBe(SpecificationStatus.contributed)
+        cfg.changeContributionStatus("waterleveltransmitter1", SpecificationStatus.published, 1)
+        g = ConfigSpecification.getSpecificationByFilename("waterleveltransmitter1")
 
+        expect(fs.existsSync(join(contributedSpecdir, "waterleveltransmitter1.yaml"))).toBeFalsy()
+        expect(fs.existsSync(join(contributedSpecdir, "files/waterleveltransmitter1/files.yaml"))).toBeFalsy()
+        expect(g?.status).toBe(SpecificationStatus.published)
+        cleanWaterLevelTransmitter1(publicSpecdir)
+        cleanWaterLevelTransmitter1(contributedSpecdir)
+        cleanWaterLevelTransmitter1(localSpecdir)
+
+    })
+
+})
+
+
+function cleanWaterLevelTransmitter1(contributedSpecdir: string) {
+    if (fs.existsSync(join(contributedSpecdir, "files/waterleveltransmitter1")))
+        fs.rmdirSync(join(contributedSpecdir, "files/waterleveltransmitter1"), { recursive: true })
+    if (fs.existsSync(join(contributedSpecdir, "waterleveltransmitter1.yaml")))
+        fs.unlinkSync(join(contributedSpecdir, "waterleveltransmitter1.yaml"))
+
+}
+it("contribution cloned", () => {
+    singleMutex.runExclusive(() => {
+
+        let cfg = new ConfigSpecification()
+        let localSpecdir = join(yamlDir, "local/specifications")
+        let publicSpecdir = join(yamlDir, "public/specifications")
+        let contributedSpecdir = join(yamlDir, "contributed/specifications")
+        fs.copyFileSync(join(localSpecdir, "waterleveltransmitter.yaml"), join(localSpecdir, "waterleveltransmitter1.yaml"))
+        fs.copyFileSync(join(localSpecdir, "waterleveltransmitter.yaml"), join(publicSpecdir, "waterleveltransmitter1.yaml"))
+        cleanWaterLevelTransmitter1(contributedSpecdir)
+        let filesDir = join(localSpecdir, "files/waterleveltransmitter1")
+        let publicfilesDir = join(publicSpecdir, "files/waterleveltransmitter1")
+        if (!fs.existsSync(filesDir))
+            fs.mkdirSync(filesDir)
+        if (!fs.existsSync(publicfilesDir))
+            fs.mkdirSync(publicfilesDir)
+        fs.copyFileSync(join(localSpecdir, "files/waterleveltransmitter/files.yaml"), join(localSpecdir, "files/waterleveltransmitter1/files.yaml"))
+        fs.copyFileSync(join(localSpecdir, "files/waterleveltransmitter/files.yaml"), join(publicSpecdir, "files/waterleveltransmitter1/files.yaml"))
+        cfg.readYaml()
+        let g = ConfigSpecification.getSpecificationByFilename("waterleveltransmitter1")
+        expect(g).toBeDefined()
+        expect(g?.status).toBe(SpecificationStatus.cloned)
+
+        expect(fs.existsSync(join(localSpecdir, "waterleveltransmitter1.yaml"))).toBeTruthy()
+        expect(fs.existsSync(join(localSpecdir, "files/waterleveltransmitter1/files.yaml"))).toBeTruthy()
+        expect(fs.existsSync(join(publicSpecdir, "waterleveltransmitter1.yaml"))).toBeTruthy()
+        expect(fs.existsSync(join(publicSpecdir, "files/waterleveltransmitter1/files.yaml"))).toBeTruthy()
+        cfg.changeContributionStatus("waterleveltransmitter1", SpecificationStatus.contributed, 1)
+        expect(fs.existsSync(join(contributedSpecdir, "waterleveltransmitter1.yaml"))).toBeTruthy()
+        expect(fs.existsSync(join(contributedSpecdir, "files/waterleveltransmitter1/files.yaml"))).toBeTruthy()
+        expect(fs.existsSync(join(localSpecdir, "waterleveltransmitter1.yaml"))).toBeFalsy()
+        expect(fs.existsSync(join(localSpecdir, "files/waterleveltransmitter1/files.yaml"))).toBeFalsy()
+
+        g = ConfigSpecification.getSpecificationByFilename("waterleveltransmitter1")
+        expect(g?.status).toBe(SpecificationStatus.contributed)
+        cfg.changeContributionStatus("waterleveltransmitter1", SpecificationStatus.cloned, undefined)
+        expect(fs.existsSync(join(localSpecdir, "waterleveltransmitter1.yaml"))).toBeTruthy()
+        expect(fs.existsSync(join(localSpecdir, "files/waterleveltransmitter1/files.yaml"))).toBeTruthy()
+        g = ConfigSpecification.getSpecificationByFilename("waterleveltransmitter1")
+        expect(g?.status).toBe(SpecificationStatus.cloned)
+        cfg.changeContributionStatus("waterleveltransmitter1", SpecificationStatus.contributed, 1)
+        expect(fs.existsSync(join(contributedSpecdir, "waterleveltransmitter1.yaml"))).toBeTruthy()
+        expect(fs.existsSync(join(contributedSpecdir, "files/waterleveltransmitter1/files.yaml"))).toBeTruthy()
+        g = ConfigSpecification.getSpecificationByFilename("waterleveltransmitter1")
+        expect(g?.status).toBe(SpecificationStatus.contributed)
+        cfg.changeContributionStatus("waterleveltransmitter1", SpecificationStatus.published, 1)
+        g = ConfigSpecification.getSpecificationByFilename("waterleveltransmitter1")
+
+        expect(fs.existsSync(join(contributedSpecdir, "waterleveltransmitter1.yaml"))).toBeFalsy()
+        expect(fs.existsSync(join(contributedSpecdir, "files/waterleveltransmitter1/files.yaml"))).toBeFalsy()
+        expect(g?.status).toBe(SpecificationStatus.published)
+        cleanWaterLevelTransmitter1(publicSpecdir)
+        cleanWaterLevelTransmitter1(contributedSpecdir)
+        cleanWaterLevelTransmitter1(localSpecdir)
+
+    })
 })
 

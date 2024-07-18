@@ -484,7 +484,11 @@ export class ConfigSpecification {
             onAfterSave(fileSpec.filename)
         return fileSpec;
     }
-
+    deleteNewSpecificationFiles() {
+        let dir = getSpecificationImageOrDocumentUrl(join(ConfigSpecification.yamlDir, "local"), "_new", "")
+        if (fs.existsSync(dir))
+            fs.rmdirSync(dir, { recursive: true })
+    }
     deleteSpecification(specfileName: string) {
         let found = false;
         for (let idx = 0; idx < ConfigSpecification.specifications.length; idx++) {
