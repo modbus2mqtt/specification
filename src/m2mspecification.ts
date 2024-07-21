@@ -339,9 +339,11 @@ export class M2mSpecification implements IspecificationValidator, Ispecification
             let identfied = this.validateIdentification(language)
             if (identfied.length > maxIdentifiedSpecs)
                 rc.push({ type: MessageTypes.identifiedByOthers, category: MessageCategories.validateOtherIdentification, additionalInformation: identfied })
-            let mSpec = M2mSpecification.fileToModbusSpecification(this.settings as IfileSpecification)
-            if (mSpec.identified != undefined)
+            let mSpec = (this.settings as ImodbusSpecification)
+            if (mSpec.identified == undefined)
                 mSpec = M2mSpecification.fileToModbusSpecification(this.settings as IfileSpecification)
+            else
+                M2mSpecification.setIdentifiedByEntities(mSpec)
             if (mSpec.identified != IdentifiedStates.identified)
                 rc.push({ type: MessageTypes.notIdentified, category: MessageCategories.validateSpecification })
         }
@@ -363,6 +365,21 @@ export class M2mSpecification implements IspecificationValidator, Ispecification
             }
         })
         return rc;
+    }
+    private static setIdentifiedByEntities(mSpec: ImodbusSpecification) {
+        mSpec.identified = IdentifiedStates.unknown;
+        mSpec.entities.forEach(ent => {
+            switch (ent.identified) {
+                case IdentifiedStates.notIdentified:
+                    mSpec.identified = IdentifiedStates.notIdentified;
+                    break;
+                case IdentifiedStates.identified:
+                    if (mSpec.identified == undefined || mSpec.identified == IdentifiedStates.unknown)
+                        mSpec.identified = IdentifiedStates.identified;
+                    break;
+            }
+        });
+
     }
     static fileToModbusSpecification(inSpec: IfileSpecification, values?: ImodbusValues): ImodbusSpecification {
         let valuesLocal = values
@@ -393,18 +410,7 @@ export class M2mSpecification implements IspecificationValidator, Ispecification
                 }
             }
         }
-        rc.identified = IdentifiedStates.unknown;
-        rc.entities.forEach(ent => {
-            switch (ent.identified) {
-                case IdentifiedStates.notIdentified:
-                    rc.identified = IdentifiedStates.notIdentified;
-                    break;
-                case IdentifiedStates.identified:
-                    if (rc.identified == undefined || rc.identified == IdentifiedStates.unknown)
-                        rc.identified = IdentifiedStates.identified;
-                    break;
-            }
-        });
+        M2mSpecification.setIdentifiedByEntities(rc)
 
         return rc;
     }

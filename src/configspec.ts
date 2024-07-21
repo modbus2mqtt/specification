@@ -229,7 +229,7 @@ export class ConfigSpecification {
     // removes non configuration data
     // Adds  testData array from Modbus values. They can be used to test specification
     static toFileSpecification(modbusSpec: ImodbusSpecification, modbusValues?: ImodbusValues): IfileSpecification {
-        let fileSpec: IfileSpecification = { ...modbusSpec, version: SPECIFICATION_VERSION, testdata: structuredClone(this.emptyTestData) }
+        let fileSpec: IfileSpecification = structuredClone({ ...modbusSpec, version: SPECIFICATION_VERSION, testdata: structuredClone(this.emptyTestData) })
         delete fileSpec['identification'];
         // delete (fileSpec as any)['status'];
         if (modbusValues) {
