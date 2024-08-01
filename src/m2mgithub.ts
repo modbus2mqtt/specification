@@ -177,9 +177,9 @@ export class M2mGitHub {
     fetchPublicFiles(): void {
         debug("Fetch public files")
         if (existsSync(join(this.publicRoot, ".git")))
-            log.log(LogLevelEnum.notice, execSync("git pull", { cwd: this.publicRoot }))
+            log.log(LogLevelEnum.notice, execSync("git pull", { cwd: this.publicRoot }).toString())
         else
-            log.log(LogLevelEnum.notice, execSync("git clone https://github.com/" + githubPublicNames.publicModbus2mqttOwner + "/" + githubPublicNames.modbus2mqttRepo + ".git " + this.publicRoot))
+            log.log(LogLevelEnum.notice, execSync("git clone https://github.com/" + githubPublicNames.publicModbus2mqttOwner + "/" + githubPublicNames.modbus2mqttRepo + ".git " + this.publicRoot).toString())
         new ConfigSpecification().readYaml()
     }
     static getPullRequestUrl(pullNumber: number): string {
