@@ -1,5 +1,5 @@
 export * from './convertermap'
-export  * from './log'
+export * from './log'
 export * from './ifilespecification'
 export * from './m2mspecification'
 export * from './m2mgithub'
