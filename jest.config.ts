@@ -10,6 +10,6 @@ const config: Config = {
   },
   testRegex: '/__tests__/(.*|(\\.|/)(test|spec))(\\.tsx)+$',
   moduleFileExtensions: ['ts', 'tsx', 'js', 'jsx', 'json', 'node'],
-  setupFiles: ["<rootDir>/.jest/setEnvVars.js"]
+//   setupFiles: ["<rootDir>/.jest/setEnvVars.js"]
 };
 export default config;
