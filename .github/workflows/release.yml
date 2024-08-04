@@ -4,7 +4,7 @@ on:
       - "v*"
 jobs:
   release:
-    uses: modbus2mqtt/specification.shared/.github/workflows/release.yml@main
+    uses: modbus2mqtt/specification.shared/.github/workflows/publish.yml@main
     secrets:
       NODE_AUTH_TOKEN: ${{ secrets.NODE_AUTH_TOKEN }}
 
