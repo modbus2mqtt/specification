@@ -3,7 +3,7 @@ import { M2mGitHub } from "../src/m2mgithub";
 import { yamlDir } from "./configsbase";
 import { join } from "path";
 import { ConfigSpecification } from '../src/configspec';
-import { beforeAll, expect, it } from '@jest/globals';
+import { beforeAll, expect, it, describe } from '@jest/globals';
 import * as fs from 'fs'
 
 
@@ -50,32 +50,35 @@ function testWait(github: M2mGitHub, done: any) {
         })
     })
 }
-it('init with no github token', done => {
-    let publictestdir = join(yamlDir, "publictest")
-    let github = new M2mGitHub(null, publictestdir)
-    github['ownOwner'] = "modbus2mqtt"
-    github.init().then((hasGhToken) => {
-        expect(hasGhToken).toBeFalsy()
-        fs.rmSync(publictestdir, { recursive: true })
-        done()
-    }).
-        catch(() => {
-            expect(false).toBeTruthy()
-        })
-
-
+describe.skip("skipped because github tests require NODE_AUTH_TOKEN", () => {
+    it('init with no github token', done => {
+        let publictestdir = join(yamlDir, "publictest")
+        let github = new M2mGitHub(null, publictestdir)
+        github['ownOwner'] = "modbus2mqtt"
+        github.init().then((hasGhToken) => {
+            expect(hasGhToken).toBeFalsy()
+            fs.rmSync(publictestdir, { recursive: true })
+            done()
+        }).
+            catch(() => {
+                expect(false).toBeTruthy()
+            })
+    
+    
+    })
+    
+    it('init', done => {
+    
+        let github = new M2mGitHub(process.env.GITHUB_TOKEN, join(yamlDir, "publictest"))
+        github['ownOwner'] = "modbus2mqtt"
+        testWait(github, done)
+        // github.deleteRepository().then(() => {
+        //     testWait(github, done)
+        // }).catch(e => {
+        //     testWait(github, done)
+        // })
+    }, 10000)
+    
+        
 })
-
-it('init', done => {
-
-    let github = new M2mGitHub(process.env.GITHUB_TOKEN, join(yamlDir, "publictest"))
-    github['ownOwner'] = "modbus2mqtt"
-    testWait(github, done)
-    // github.deleteRepository().then(() => {
-    //     testWait(github, done)
-    // }).catch(e => {
-    //     testWait(github, done)
-    // })
-}, 10000)
-
 

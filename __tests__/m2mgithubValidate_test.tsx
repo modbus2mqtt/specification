@@ -40,7 +40,7 @@ function testWait(github: M2mGithubValidate, done: any) {
 
 }
 
-it('init', done => {
+it.skip('validate test requires GITHUB_TOKEN', done => {
 
     expect(process.env.GITHUB_TOKEN).toBeDefined()
     let github = new M2mGithubValidate(process.env.GITHUB_TOKEN as string, "__tests__/yamlDirValidate")
