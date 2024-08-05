@@ -93,7 +93,7 @@ export class ConfigSpecification {
         if (spec) spec.files = files
       }
     } else {
-      console.error('Path does not exist ' + filesPath)
+      log.log(LogLevelEnum.error, 'Path does not exist ' + filesPath)
     }
     return files ? files : undefined
   }
@@ -341,7 +341,7 @@ export class ConfigSpecification {
           if (spec) spec.files = files
         }
       } catch (e: any) {
-        console.error('Unable to read Files directory for ' + specfilename)
+        log.log(LogLevelEnum.error, 'Unable to read Files directory for ' + specfilename)
       }
     }
     specfilename = getSpecificationImageOrDocumentUrl(join(ConfigSpecification.yamlDir, 'local'), specfilename, fname)
