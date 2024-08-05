@@ -1,102 +1,104 @@
-import { Converter } from "./converter";
-import { Ientity, Ispecification, getSpecificationI18nEntityOptionName, getSpecificationI18nEntityOptionId, IselectOption, Iselect, ModbusRegisterType, Converters } from '@modbus2mqtt/specification.shared';
-import { LogLevelEnum, Logger } from "./log";
-import { ReadRegisterResult } from "./converter";
-import { ConfigSpecification } from "./configspec";
+import { Converter } from './converter'
+import {
+  Ientity,
+  Ispecification,
+  getSpecificationI18nEntityOptionName,
+  getSpecificationI18nEntityOptionId,
+  IselectOption,
+  Iselect,
+  ModbusRegisterType,
+  Converters,
+} from '@modbus2mqtt/specification.shared'
+import { LogLevelEnum, Logger } from './log'
+import { ReadRegisterResult } from './converter'
+import { ConfigSpecification } from './configspec'
 
 const log = new Logger('selectconverter')
 export class SelectConverter extends Converter {
-    length: number = 1;
+  length: number = 1
 
-    constructor(component?: Converters) {
-        if (!component)
-            component = "select";
-        super(component);
+  constructor(component?: Converters) {
+    if (!component) component = 'select'
+    super(component)
+  }
+  private getOptions(spec: Ispecification, entityid: number): IselectOption[] {
+    let entity = spec.entities.find((e) => e.id == entityid)
+    if (entity && entity.converterParameters) {
+      if ('options' in entity.converterParameters && entity.converterParameters.options) {
+        return entity.converterParameters.options
+      } else if ('optionModbusValues' in entity.converterParameters && entity.converterParameters.optionModbusValues) {
+        let options: IselectOption[] = []
+        entity.converterParameters.optionModbusValues.forEach((option) => {
+          let name = getSpecificationI18nEntityOptionName(spec, ConfigSpecification.mqttdiscoverylanguage!, entityid, option)
+          options.push({ key: option, name: name ? name : '' })
+        })
+        return options
+      }
     }
-    private getOptions(spec: Ispecification, entityid: number): IselectOption[] {
-        let entity = spec.entities.find(e => e.id == entityid)
-        if (entity && entity.converterParameters) {
-            if ("options" in entity.converterParameters && entity.converterParameters.options) {
-                return entity.converterParameters.options
-            }
-            else
-                if ("optionModbusValues" in entity.converterParameters && entity.converterParameters.optionModbusValues) {
-                    let options: IselectOption[] = []
-                    entity.converterParameters.optionModbusValues.forEach(option => {
-                        let name = getSpecificationI18nEntityOptionName(spec, ConfigSpecification.mqttdiscoverylanguage!, entityid, option)
-                        options.push({ key: option, name: name ? name : "" })
-                    })
-                    return options;
-                }
-        }
-        throw new Error("No options available for entity id: " + entityid);
-    }
+    throw new Error('No options available for entity id: ' + entityid)
+  }
 
-    override modbus2mqtt(spec: Ispecification, entityid: number, value: ReadRegisterResult): number | string {
+  override modbus2mqtt(spec: Ispecification, entityid: number, value: ReadRegisterResult): number | string {
+    let entity = spec.entities.find((e) => e.id == entityid)
+    var msg = ''
+    if (entity) {
+      if ((entity.converterParameters as Iselect).options) {
+        let opt = (entity.converterParameters as Iselect)!.options!.find((opt) => opt.key == value.data[0])
+        return opt && opt.name ? opt.name : ''
+      } else {
+        var rc = getSpecificationI18nEntityOptionName(spec, ConfigSpecification.mqttdiscoverylanguage!, entityid, value.data[0])
+        if (rc) return rc
+      }
+      let options = this.getOptions(spec, entityid)
+      var msg =
+        'option not found spec: ' +
+        spec.filename +
+        ' entity id: "' +
+        entity.id +
+        '" key:' +
+        value.data[0] +
+        ' options: ' +
+        JSON.stringify(options)
+    } else msg = 'entityid not in entities list: "' + entityid + '" key:' + value.data[0]
+    return msg
+  }
+  override mqtt2modbus(spec: Ispecification, entityid: number, name: string): ReadRegisterResult {
+    let entity = spec.entities.find((e) => e.id == entityid)
+    if (!entity) throw new Error('entity not found in entities')
 
-        let entity = spec.entities.find(e => e.id == entityid)
-        var msg = ""
-        if (entity) {
-            if ((entity.converterParameters as Iselect).options) {
-                let opt = (entity.converterParameters as Iselect)!.options!.find(opt => opt.key == value.data[0])
-                return opt && opt.name ? opt.name : ""
-            }
-            else {
-                var rc = getSpecificationI18nEntityOptionName(spec, ConfigSpecification.mqttdiscoverylanguage!, entityid, value.data[0])
-                if (rc)
-                    return rc;
-            }
-            let options = this.getOptions(spec, entityid);
-            var msg = "option not found spec: " + spec.filename + " entity id: \"" + entity.id + "\" key:" + value.data[0] + " options: " + JSON.stringify(options);
-        }
-        else
-            msg = "entityid not in entities list: \"" + entityid + "\" key:" + value.data[0];
-        return msg;
-    }
-    override mqtt2modbus(spec: Ispecification, entityid: number, name: string): ReadRegisterResult {
-        let entity = spec.entities.find(e => e.id == entityid)
-        if (!entity)
-            throw new Error("entity not found in entities")
-
-        if (this.component === "binary")
-            return {
-                data: [],
-                buffer: Buffer.from("")
-            }
-        let val = getSpecificationI18nEntityOptionId(spec, ConfigSpecification.mqttdiscoverylanguage!, entityid, name);
-        if (val) {
-            let buf = Buffer.alloc(2)
-            buf.writeInt16BE(val[0])
-            return {
-                data: val,
-                buffer: buf
-            };
-        }
-
-        let options = this.getOptions(spec, entityid);
-        var msg = "unknown option  entity id: " + entity.id + "(assuming: name = 0)" + name + "options: " + options;
-        log.log(LogLevelEnum.error, msg);
-        return {
-            data: [],
-            buffer: Buffer.from("")
-        };
-    }
-    override getParameterType(_entity: Ientity): string | undefined {
-        switch (this.component) {
-            case "binary":
-                return "Ibinary_sensor";
-              default:
-                return "Iselect";
-        }
+    if (this.component === 'binary')
+      return {
+        data: [],
+        buffer: Buffer.from(''),
+      }
+    let val = getSpecificationI18nEntityOptionId(spec, ConfigSpecification.mqttdiscoverylanguage!, entityid, name)
+    if (val) {
+      let buf = Buffer.alloc(2)
+      buf.writeInt16BE(val[0])
+      return {
+        data: val,
+        buffer: buf,
+      }
     }
 
-    override getModbusRegisterTypes(): ModbusRegisterType[] {
-        return [ModbusRegisterType.HoldingRegister,
-            ModbusRegisterType.AnalogInputs,
-            ModbusRegisterType.Coils];
+    let options = this.getOptions(spec, entityid)
+    var msg = 'unknown option  entity id: ' + entity.id + '(assuming: name = 0)' + name + 'options: ' + options
+    log.log(LogLevelEnum.error, msg)
+    return {
+      data: [],
+      buffer: Buffer.from(''),
     }
+  }
+  override getParameterType(_entity: Ientity): string | undefined {
+    switch (this.component) {
+      case 'binary':
+        return 'Ibinary_sensor'
+      default:
+        return 'Iselect'
+    }
+  }
+
+  override getModbusRegisterTypes(): ModbusRegisterType[] {
+    return [ModbusRegisterType.HoldingRegister, ModbusRegisterType.AnalogInputs, ModbusRegisterType.Coils]
+  }
 }
-
-
-
-

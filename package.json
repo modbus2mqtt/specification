@@ -1,6 +1,6 @@
 {
   "name": "@modbus2mqtt/specification",
-  "version": "0.10.0",
+  "version": "0.11.0",
   "description": "File access, github access and validation for specifications",
   "keywords": [
     "modbus2mqtt",
@@ -20,13 +20,14 @@
   "scripts": {
     "test": "jest",
     "build.modbusserver": "mkdir -p distsrv && tsc --project tsconfig.modbusserver.json && sed '/\"scripts\"/,/}[,]$/ d; /^$/d' package.json >package.dist",
-    "build": "tsc && npx  @opengovsg/credits-generator"
+    "build": "tsc && npx  @opengovsg/credits-generator",
+    "prettier": "prettier --write '**/*.{ts,js,css,html,tsx}'"
   },
   "bin": {
     "validate": "bin/validate.js"
   },
   "dependencies": {
-    "@modbus2mqtt/specification.shared": "^0.8.0",
+    "@modbus2mqtt/specification.shared": "^0.9.0",
     "@octokit/rest": "^20.1.1",
     "@types/npmlog": "^7.0.0",
     "commander": "^12.1.0",

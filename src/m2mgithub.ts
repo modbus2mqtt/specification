@@ -174,7 +174,10 @@ export class M2mGitHub {
     }
   }
 
-  constructor(personalAccessToken: string | null, private publicRoot: string) {
+  constructor(
+    personalAccessToken: string | null,
+    private publicRoot: string
+  ) {
     this.octokit = null
     if (personalAccessToken)
       this.octokit = new Octokit({

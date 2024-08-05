@@ -12,7 +12,10 @@ export interface IpullRequest {
 }
 export class M2mGithubValidate extends M2mGitHub {
   private localDir: string
-  constructor(personalAccessToken: string, private yamlDir: string) {
+  constructor(
+    personalAccessToken: string,
+    private yamlDir: string
+  ) {
     super(personalAccessToken, join(yamlDir, 'public'))
     this.localDir = join(this.yamlDir, 'local')
   }

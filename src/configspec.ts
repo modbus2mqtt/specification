@@ -189,7 +189,8 @@ export class ConfigSpecification {
         let published = publishedSpecifications.find((obj) => {
           return obj.filename === specification.filename
         })
-        if (!published) specification.status = SpecificationStatus.added // local only
+        if (!published)
+          specification.status = SpecificationStatus.added // local only
         else {
           specification.status = SpecificationStatus.cloned // contributed expect no local
           specification.publicSpecification = published

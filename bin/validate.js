@@ -1,2 +1,2 @@
 #!/usr/bin/env node
-require('../dist/validate.js');
+require('../dist/validate.js')

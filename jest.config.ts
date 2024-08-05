@@ -1,4 +1,4 @@
-import type { Config } from 'jest';
+import type { Config } from 'jest'
 
 const config: Config = {
   verbose: true,
@@ -10,6 +10,6 @@ const config: Config = {
   },
   testRegex: '/__tests__/(.*|(\\.|/)(test|spec))(\\.tsx)+$',
   moduleFileExtensions: ['ts', 'tsx', 'js', 'jsx', 'json', 'node'],
-//   setupFiles: ["<rootDir>/.jest/setEnvVars.js"]
-};
-export default config;
+  //   setupFiles: ["<rootDir>/.jest/setEnvVars.js"]
+}
+export default config
