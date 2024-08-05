@@ -189,7 +189,7 @@ describe('simple tests', () => {
   })
 })
 
-it('closeContribution', (done) => {
+it.skip('closeContribution need github access', (done) => {
   singleMutex.acquire()
   let yamlDir = '__tests__/yamlDircloseContribute'
 

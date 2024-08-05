@@ -81,7 +81,7 @@ export class ConfigSpecification {
         let content = fs.readFileSync(filesName, { encoding: 'utf8' })
         files = parse(content.toString())
       } catch (e: any) {
-        console.error('Unable to read Files directory for ' + filesName)
+        log.log(LogLevelEnum.error, 'Unable to read Files directory for ' + filesName + '\n' + JSON.stringify(e))
       }
       if (files.find((uf) => uf.url == url.url && uf.usage == url.usage) == null) {
         files.push(url)
