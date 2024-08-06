@@ -11,16 +11,21 @@
   "type": "commonjs",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
+  "exports": {
+    "require": "./dist/index.js",
+    "import": "./dist/index.js"
+  },
   "author": "Volkmar Nissen <volkmar.nissen@gmail.com>",
   "license": "MIT",
   "repository": {
     "type": "git",
     "url": "https://github.com/modbus2mqtt/specification"
   },
+
   "scripts": {
     "test": "jest",
-    "build.modbusserver": "mkdir -p distsrv && tsc --project tsconfig.modbusserver.json && sed '/\"scripts\"/,/}[,]$/ d; /^$/d' package.json >package.dist",
-    "build": "tsc && npx  @opengovsg/credits-generator",
+    "build.modbusserver": "mkdir -p distsrv && tsc --project tsconfig.modbusserver.json && sed '/\"scripts\"/,/}[,]$/ d; /^$/d' package.json >package.dist ",
+    "build": "tsc && npx  @opengovsg/credits-generator && echo '{\"type\": \"commonjs\"}' > dist/package.json",
     "prettier": "prettier --write '**/*.{ts,js,css,html,tsx}'"
   },
   "bin": {
