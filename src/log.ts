@@ -1,6 +1,6 @@
 import npmlog from 'npmlog'
 import Debug from 'debug'
-
+import { format } from 'util'
 export enum LogLevelEnum {
   verbose = 'verbose',
   timing = 'timing',
@@ -27,7 +27,9 @@ export class Logger {
     if (!Logger.isInitialized) {
       Logger.init()
     }
-    npmlog.log(level, this.prefix, message, ...args)
+    if (process.env['JEST_WORKER_ID'] !== undefined) {
+      Debug(this.prefix)(format(message, ...args))
+    } else npmlog.log(level, this.prefix, message, ...args)
   }
   private static init(): void {
     Logger.isInitialized = true

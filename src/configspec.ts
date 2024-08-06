@@ -505,7 +505,7 @@ export class ConfigSpecification {
   }
   deleteNewSpecificationFiles() {
     let dir = getSpecificationImageOrDocumentUrl(join(ConfigSpecification.yamlDir, 'local'), '_new', '')
-    if (fs.existsSync(dir)) fs.rmdirSync(dir, { recursive: true })
+    if (fs.existsSync(dir)) fs.rmSync(dir, { recursive: true })
   }
   deleteSpecification(specfileName: string) {
     let found = false

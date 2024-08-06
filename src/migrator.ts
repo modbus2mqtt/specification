@@ -22,7 +22,6 @@ export class Migrator {
   migrate(filecontent: any): IfileSpecification {
     let rc: IfileSpecification
 
-    log.log(LogLevelEnum.notice, 'Migration:' + filecontent.version)
     let count = 0
     let maxCount = 4
     while (filecontent.version != undefined && count < maxCount) {

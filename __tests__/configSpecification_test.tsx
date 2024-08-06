@@ -11,10 +11,9 @@ import {
   getSpecificationI18nName,
   newSpecification,
 } from '@modbus2mqtt/specification.shared'
-import { IReadRegisterResultOrError, emptyModbusValues } from '../src/m2mspecification'
-import { IModbusData } from '../src/ifilespecification'
+import { IReadRegisterResultOrError } from '../src/m2mspecification'
 import { ImodbusValues } from '../dist'
-import { Mutex } from 'async-mutex'
+
 
 ConfigSpecification['yamlDir'] = yamlDir
 ConfigSpecification.setMqttdiscoverylanguage('en')
@@ -23,19 +22,6 @@ let testdata: ImodbusValues = {
   holdingRegisters: new Map<number, IReadRegisterResultOrError>(),
   analogInputs: new Map<number, IReadRegisterResultOrError>(),
 }
-const hostInfo: string =
-  '{"result": "ok", "data": \
-{"devices": [ \
-    {"name": "fb1", "sysfs": "/sys/devices/platform/3eaf0000.framebuffer/graphics/fb1", "dev_path": "/dev/fb1", "subsystem": "graphics", \
-    "by_id": null, "attributes": {"DEVNAME": "/dev/fb1", "DEVPATH": "/devices/platform/3eaf0000.framebuffer/graphics/fb1", \
-    "ID_FOR_SEAT": "graphics-platform-3eaf0000_framebuffer", "ID_PATH": "platform-3eaf0000.framebuffer", "ID_PATH_TAG": "platform-3eaf0000_framebuffer",\
-     "MAJOR": "29", "MINOR": "1", "SUBSYSTEM": "graphics", "TAGS": ":seat:", "USEC_INITIALIZED": "6801493"}, "children": []},  \
-    {"name": "ttyAMA0", "sysfs": "/sys/devices/platform/soc/3f201000.serial/tty/ttyAMA0", "dev_path": "/dev/ttyAMA0", "subsystem": "tty", \
-    "by_id": null, "attributes": {"DEVLINKS": "/dev/serial1", "DEVNAME": "/dev/ttyAMA0", "DEVPATH": "/devices/platform/soc/3f201000.serial/tty/ttyAMA0", "MAJOR": "204",\
-     "MINOR": "64", "SUBSYSTEM": "tty", "TAGS": ":systemd:", "USEC_INITIALIZED": "6364122"}, "children": []},  \
-    {"name": "ttyUSB0", "sysfs": "/sys/devices/platform/soc/3f980000.usb/usb1/1-1/1-1.3/1-1.3:1.0/ttyUSB0/tty/ttyUSB0", "dev_path": "/dev/ttyUSB0", "subsystem": "tty", \
-        "by_id": "/dev/serial/by-id/usb-1a86_USB_Serial-if00-port0", "attributes": {  }, "children": []} \
-]}}'
 
 it('check device type status', () => {
   const configSpec = new ConfigSpecification()
@@ -68,7 +54,6 @@ it('write/Migrate', () => {
 it('getFileNameFromName remove non ascii characters', () => {
   const name = '/\\*& asdf+-_.'
   let fn = getFileNameFromName(name)
-  console.log(fn)
   expect(fn).toBe('asdf+-_.')
 })
 it('getSpecificationI18nName ', () => {
@@ -79,7 +64,6 @@ it('getSpecificationI18nName ', () => {
   let spec = ConfigSpecification.getSpecificationByFilename('waterleveltransmitter')
   expect(getSpecificationI18nName(spec!, 'fr')).toBe('Water Level Transmitter')
   expect(getSpecificationI18nName(spec!, 'en')).toBe('Water Level Transmitter')
-  console.log(fn)
   expect(fn).toBe('asdf+-_.')
 })
 
@@ -191,7 +175,7 @@ it('contribution', () => {
 
 function cleanWaterLevelTransmitter1(contributedSpecdir: string) {
   if (fs.existsSync(join(contributedSpecdir, 'files/waterleveltransmitter1')))
-    fs.rmdirSync(join(contributedSpecdir, 'files/waterleveltransmitter1'), { recursive: true })
+    fs.rmSync(join(contributedSpecdir, 'files/waterleveltransmitter1'), { recursive: true })
   if (fs.existsSync(join(contributedSpecdir, 'waterleveltransmitter1.yaml')))
     fs.unlinkSync(join(contributedSpecdir, 'waterleveltransmitter1.yaml'))
 }
