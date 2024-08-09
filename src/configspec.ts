@@ -23,14 +23,6 @@ import { IReadRegisterResultOrError, ImodbusValues, M2mSpecification } from './m
 import { Migrator } from './migrator'
 import { M2mGitHub } from './m2mgithub'
 
-declare global {
-  namespace NodeJS {
-    interface ProcessEnv {
-      HASSIO_TOKEN: string
-    }
-  }
-}
-
 const log = new Logger('config')
 const secretsLength = 256
 const saltRounds = 8
