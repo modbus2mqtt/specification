@@ -9,7 +9,7 @@ import { ConfigSpecification } from './configspec'
 
 const debug = require('debug')('m2mgithub')
 export const githubPublicNames = {
-  publicModbus2mqttOwner: 'volkmarnissen',
+  publicModbus2mqttOwner: 'modbus2mqtt',
   modbus2mqttRepo: 'modbus2mqtt.config',
   modbus2mqttBranch: 'main',
 }
