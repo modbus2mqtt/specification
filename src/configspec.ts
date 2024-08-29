@@ -54,21 +54,21 @@ export class ConfigSpecification {
     return ConfigSpecification.yamlDir + '/local/specifications/' + spec.filename + '.yaml'
   }
   private getLocalFilesPath(specfilename: string): string {
-    return getSpecificationImageOrDocumentUrl('local', specfilename, '')
+    return join(ConfigSpecification.yamlDir ,getSpecificationImageOrDocumentUrl('local', specfilename, ''))
   }
   private getPublicFilesPath(specfilename: string): string {
-    return getSpecificationImageOrDocumentUrl('public', specfilename, '')
+    return join(ConfigSpecification.yamlDir ,getSpecificationImageOrDocumentUrl('public', specfilename, ''))
   }
   private getContributedFilesPath(specfilename: string): string {
-    return getSpecificationImageOrDocumentUrl('contributed', specfilename, '')
+    return join(ConfigSpecification.yamlDir ,getSpecificationImageOrDocumentUrl('contributed', specfilename, ''))
   }
   appendSpecificationUrl(specfilename: string, url: IimageAndDocumentUrl): IimageAndDocumentUrl[] | undefined {
     let filesPath = this.getLocalFilesPath(specfilename)
     if (filesPath && !fs.existsSync(filesPath)) fs.mkdirSync(filesPath, { recursive: true })
 
     let files: IimageAndDocumentUrl[] = []
-    if (fs.existsSync(join(ConfigSpecification.yamlDir, filesPath))) {
-      let filesName = join(ConfigSpecification.yamlDir, filesPath, 'files.yaml')
+    if (fs.existsSync( filesPath)) {
+      let filesName = join( filesPath, 'files.yaml')
       try {
         let content = fs.readFileSync(filesName, { encoding: 'utf8' })
         files = parse(content.toString())

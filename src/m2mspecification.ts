@@ -559,8 +559,8 @@ export class M2mSpecification implements IspecificationValidator, Ispecification
     if (testdata)
       testdata.forEach((mv) => {
         if (mv.value != undefined)
-          data.set(mv.address, { result: { data: [mv.value], buffer: Buffer.from([mv.value]) }, error: new Error(mv.error) })
-        else data.set(mv.address, { error: new Error(mv.error) })
+          data.set(mv.address, { result: { data: [mv.value], buffer: Buffer.from([mv.value]) }, error: mv.error?new Error(mv.error):undefined})
+        else data.set(mv.address, { error:  mv.error?new Error(mv.error):undefined })
       })
   }
 
