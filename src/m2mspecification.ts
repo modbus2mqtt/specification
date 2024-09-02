@@ -883,27 +883,7 @@ export class M2mSpecification implements IspecificationValidator, Ispecification
     if (idx >= 0) return filename.substring(idx + 1)
     return filename
   }
-  private static copyEmptyValues(
-    slaveData: Map<number, IReadRegisterResultOrError>,
-    testdata: Map<number, IReadRegisterResultOrError>
-  ) {
-    for (let address of slaveData.keys()) {
-      let value = slaveData.get(address)
-      if (value == undefined) testdata.set(address, { error: new Error('No data available') })
-      else testdata.set(address, value)
-    }
-  }
-  static getEmptyModbusAddressesFromSlaveToTestdata(slaveAddresses: ImodbusValues): ImodbusValues {
-    let testdata: ImodbusValues = {
-      holdingRegisters: new Map<number, IReadRegisterResultOrError>(),
-      analogInputs: new Map<number, IReadRegisterResultOrError>(),
-      coils: new Map<number, IReadRegisterResultOrError>(),
-    }
-    if (testdata.holdingRegisters) M2mSpecification.copyEmptyValues(slaveAddresses.holdingRegisters, testdata.holdingRegisters)
-    if (testdata.analogInputs) M2mSpecification.copyEmptyValues(slaveAddresses.analogInputs, testdata.analogInputs)
-    if (testdata.coils) M2mSpecification.copyEmptyValues(slaveAddresses.coils, testdata.coils)
-    return testdata
-  }
+
   startPolling(error: (e: any) => void): Observable<IpullRequest> | undefined {
     debug('startPolling')
     let spec = this.settings as IfileSpecification

@@ -250,7 +250,7 @@ export class ConfigSpecification {
   }
   // removes non configuration data
   // Adds  testData array from Modbus values. They can be used to test specification
-  static toFileSpecification(modbusSpec: ImodbusSpecification, modbusValues?: ImodbusValues): IfileSpecification {
+  static toFileSpecification(modbusSpec: ImodbusSpecification): IfileSpecification {
     let fileSpec: IfileSpecification = structuredClone({
       ...modbusSpec,
       version: SPECIFICATION_VERSION,
@@ -258,12 +258,7 @@ export class ConfigSpecification {
     })
     delete fileSpec['identification']
     // delete (fileSpec as any)['status'];
-    if (modbusValues) {
-      fileSpec.testdata = this.emptyTestData
-      ConfigSpecification.copyToTestData(modbusValues.analogInputs, fileSpec.testdata.analogInputs)
-      ConfigSpecification.copyToTestData(modbusValues.coils, fileSpec.testdata.coils)
-      ConfigSpecification.copyToTestData(modbusValues.holdingRegisters, fileSpec.testdata.holdingRegisters)
-    } else {
+
       modbusSpec.entities.forEach((entity) => {
         if (entity.modbusValue)
           for (let idx = 0; idx < entity.modbusValue.length; idx++) {
@@ -293,7 +288,6 @@ export class ConfigSpecification {
             entity.converter.registerTypes = []
           }
       })
-    }
     if (fileSpec.testdata.analogInputs?.length == 0) delete fileSpec.testdata.analogInputs
     if (fileSpec.testdata.holdingRegisters?.length == 0) delete fileSpec.testdata.holdingRegisters
     if (fileSpec.testdata.coils?.length == 0) delete fileSpec.testdata.coils
@@ -486,11 +480,10 @@ export class ConfigSpecification {
   }
   writeSpecification(
     spec: ImodbusSpecification,
-    testdata: ImodbusValues,
     onAfterSave: (filename: string) => void | undefined,
     originalFilename: string | null
   ): IfileSpecification {
-    let fileSpec: IfileSpecification = ConfigSpecification.toFileSpecification(spec, testdata)
+    let fileSpec: IfileSpecification = ConfigSpecification.toFileSpecification(spec)
     this.writeSpecificationFromFileSpec(fileSpec, originalFilename)
     if (onAfterSave) onAfterSave(fileSpec.filename)
     return fileSpec

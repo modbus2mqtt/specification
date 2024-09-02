@@ -95,7 +95,6 @@ it('add new specification, add files, set filename', () => {
 
   cfgSpec.writeSpecification(
     mspec,
-    testdata,
     (filename) => {
       expect(filename).toBe(mspec.filename)
       wasCalled = true
@@ -111,7 +110,6 @@ it('add new specification, add files, set filename', () => {
   wasCalled = false
   cfgSpec.writeSpecification(
     mspec,
-    testdata,
     (filename) => {
       expect(filename).toBe(mspec.filename)
       wasCalled = true
