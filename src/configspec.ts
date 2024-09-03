@@ -519,6 +519,17 @@ export class ConfigSpecification {
       })
     )
   }
+  static clearModbusData(spec:IfileSpecification){
+
+    (spec).entities.forEach(ent=>{
+      delete (ent as any).modbusError
+      delete (ent as any).modbusValue
+      delete (ent as any).mqttValue
+      delete (ent as any).identified
+      })
+      delete (spec as any).identified
+  }
+
   static getSpecificationByFilename(filename: string): IfileSpecification | undefined {
     if (filename == '_new') {
       let rc: IfileSpecification = {
@@ -542,14 +553,19 @@ export class ConfigSpecification {
           })
         })
       }
-
+      ConfigSpecification.clearModbusData(rc)
       return rc
+      
     }
-    return structuredClone(
+    
+    let rc = structuredClone(
       ConfigSpecification.specifications.find((spec) => {
         return spec.filename === filename
       })
     )
+    if( rc)
+      ConfigSpecification.clearModbusData(rc)
+    return rc
   }
   static getFileNameFromSlaveId(slaveid: number): string {
     return 's' + slaveid

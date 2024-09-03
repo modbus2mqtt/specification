@@ -371,16 +371,10 @@ export class M2mSpecification implements IspecificationValidator, Ispecification
   validate(language: string): Imessage[] {
     let rc = this.validateSpecification(language, true)
     if ((this.settings as ImodbusSpecification).entities.length > 0) {
-      let identfied = this.validateIdentification(language)
-      if (identfied.length > maxIdentifiedSpecs)
-        rc.push({
-          type: MessageTypes.identifiedByOthers,
-          category: MessageCategories.validateOtherIdentification,
-          additionalInformation: identfied,
-        })
       let mSpec = this.settings as ImodbusSpecification
       if (mSpec.identified == undefined) mSpec = M2mSpecification.fileToModbusSpecification(this.settings as IfileSpecification)
       else M2mSpecification.setIdentifiedByEntities(mSpec)
+    
       if (mSpec.identified != IdentifiedStates.identified)
         rc.push({ type: MessageTypes.notIdentified, category: MessageCategories.validateSpecification })
     }
@@ -416,11 +410,13 @@ export class M2mSpecification implements IspecificationValidator, Ispecification
       }
     })
   }
+
   static fileToModbusSpecification(inSpec: IfileSpecification, values?: ImodbusValues): ImodbusSpecification {
     let valuesLocal = values
     if (valuesLocal == undefined) {
       valuesLocal = emptyModbusValues()
     }
+    ConfigSpecification.clearModbusData(inSpec)
     // copy from test data if there are no values passed
     if (
       values == undefined &&
@@ -559,7 +555,7 @@ export class M2mSpecification implements IspecificationValidator, Ispecification
     if (testdata)
       testdata.forEach((mv) => {
         if (mv.value != undefined)
-          data.set(mv.address, { result: { data: [mv.value], buffer: Buffer.from([mv.value]) }, error: mv.error?new Error(mv.error):undefined})
+          data.set(mv.address, { result: { data: [mv.value], buffer: Buffer.from([mv.value /256, mv.value % 256]) }, error: mv.error?new Error(mv.error):undefined})
         else data.set(mv.address, { error:  mv.error?new Error(mv.error):undefined })
       })
   }
