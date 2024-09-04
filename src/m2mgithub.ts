@@ -98,11 +98,15 @@ export class M2mGitHub {
         this.octokit!.repos.createFork({
           owner: githubPublicNames.publicModbus2mqttOwner,
           repo: githubPublicNames.modbus2mqttRepo,
+          default_branch_only: true
         })
           .then(() => {
             resolve()
           })
-          .catch(reject)
+          .catch(e=>{ 
+          M2mGitHub.forking = false
+            reject(e)
+          })
     })
   }
 
@@ -355,7 +359,10 @@ export class M2mGitHub {
       this.waitForOwnModbus2MqttRepo().then(() => {
         this.hasSpecBranch(branchName)
           .then((hasBranch) => {
-            if (hasBranch) reject(new Error('There is already a branch named ' + branchName))
+            if (hasBranch) reject(new Error('There is already a branch named ' + branchName + 
+                ' Please delete it in your github repository ' + this.ownOwner + '/' +
+                githubPublicNames.modbus2mqttRepo + ' at github.com'
+            ))
             else {
               debug('start committing')
               let all: Promise<ITreeParam>[] = []
