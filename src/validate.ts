@@ -140,6 +140,7 @@ gh.init()
         }
       })
       .catch((e) => {
+        log.log(LogLevelEnum.error, "Download Pull Request failed")
         logAndExit(e)
       })
   })
