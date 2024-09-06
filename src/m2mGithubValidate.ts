@@ -129,7 +129,7 @@ export class M2mGithubValidate extends M2mGitHub {
 
   addIssueComment(pullNumber: number, text: string): Promise<void> {
     return new Promise<void>((resolve, reject) => {
-      this.octokit!.rest.issues.createComment({
+      this.octokit!.issues.createComment({
         owner: githubPublicNames.publicModbus2mqttOwner,
         repo: githubPublicNames.modbus2mqttRepo,
         issue_number: pullNumber,
@@ -138,7 +138,9 @@ export class M2mGithubValidate extends M2mGitHub {
         .then(() => {
           resolve()
         })
-        .catch(reject)
+        .catch((e)=>{ e.step="addIssueComment" 
+          reject(e)
+        })
     })
   }
 

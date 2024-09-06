@@ -106,8 +106,7 @@ gh.init()
                       process.exit(0)
                     })
                     .catch((e) => {
-                      log.log(LogLevelEnum.error, e.message)
-                      process.exit(5)
+                      logAndExit(e)
                     })
                 .catch((e) => {
                   log.log(LogLevelEnum.error, 'Merge ' + pr_number + ' failed (' + e.status + ') ' + e.message)
