@@ -49,7 +49,7 @@ if (!fs.existsSync(yamlDir)) fs.mkdirSync(yamlDir, { recursive: true })
 let gh = new M2mGithubValidate(process.env.GITHUB_TOKEN, yamlDir)
 gh.init()
   .then((hasGhToken) => {
-    if (process.env.PR_NUMBER == undefined) {
+    if (process.env.PR_NUMBER ) {
       log.log(LogLevelEnum.error, 'No Pull Request Number passed to environment variable PR_NUMBER')
       process.exit(2)
     }

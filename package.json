@@ -22,6 +22,7 @@
     "build.modbusserver": "mkdir -p distsrv && tsc --project tsconfig.modbusserver.json && sed '/\"scripts\"/,/}[,]$/ d; /^$/d' package.json >package.dist ",
     "build": "tsc && echo '{\"type\": \"commonjs\"}' > dist/package.json",
     "prettier": "prettier --write '**/*.{ts,js,css,html,tsx}'"
+
   },
   "bin": {
     "validate": "bin/validate.js"
