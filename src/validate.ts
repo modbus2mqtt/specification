@@ -17,15 +17,21 @@ declare global {
 let cli = new Command()
 let yamlDir = './validate-yaml'
 cli.version(SPECIFICATION_VERSION)
-cli.usage('[--yaml <yaml-dir>]')
+cli.usage('[--yaml <yaml-dir>] [--pr_number <pull request number>')
 cli.option('-y, --yaml <yaml-dir>', 'set directory for add on configuration')
+cli.option('-p, --pr_number <number>', 'set pull request number')
 cli.parse(process.argv)
+let pr_number:number| undefined
 let options = cli.opts()
 if (options['yaml']) {
   yamlDir = options['yaml']
 }
 else
   yamlDir = "validation_dir"
+
+if (options['pr_number']) {
+    pr_number = Number.parseInt(options['pr_number'])
+}
 ConfigSpecification.yamlDir = yamlDir
 
 let log = new Logger('validate')
@@ -49,7 +55,7 @@ if (!fs.existsSync(yamlDir)) fs.mkdirSync(yamlDir, { recursive: true })
 let gh = new M2mGithubValidate(process.env.GITHUB_TOKEN, yamlDir)
 gh.init()
   .then((hasGhToken) => {
-    if (process.env.PR_NUMBER ) {
+    if (process.env.PR_NUMBER && pr_number== undefined) {
       log.log(LogLevelEnum.error, 'No Pull Request Number passed to environment variable PR_NUMBER')
       process.exit(2)
     }
@@ -57,9 +63,11 @@ gh.init()
       log.log(LogLevelEnum.error, 'No Github Access Token passed to environment variable GITHUB_TOKEN')
       process.exit(2)
     }
-
-    let pullNumber = Number.parseInt(process.env.PR_NUMBER)
-    gh.downloadPullRequest(pullNumber)
+    log.log(LogLevelEnum.notice, "pull request: " + pr_number)
+    
+    if(pr_number== undefined && process.env.PR_NUMBER)
+      pr_number = Number.parseInt(process.env.PR_NUMBER)
+    gh.downloadPullRequest(pr_number!)
       .then((pr) => {
         let specname: string | undefined
         if (pr.files != undefined)
@@ -79,11 +87,11 @@ gh.init()
             let messages = m2mSpec.validate('en')
             if (messages.length == 0) {
               log.log(LogLevelEnum.notice, 'specification ' + specname + 'is valid')
-              gh.mergePullRequest(pullNumber, 'Commit of ' + specname)
+              gh.mergePullRequest(pr_number!, 'Commit of ' + specname)
                 .then(() => {
                   log.log(LogLevelEnum.notice, 'Pull Request merged successfully')
                   gh.addIssueComment(
-                    pullNumber,
+                    pr_number!,
                     "**$${\\color{green}Merged successfully\\space successfully}$$**\nSpecification '" +
                       specname +
                       "' has been merged"
@@ -97,7 +105,7 @@ gh.init()
                     })
                 })
                 .catch((e) => {
-                  log.log(LogLevelEnum.error, 'Merge ' + pullNumber + ' failed (' + e.status + ') ' + e.message)
+                  log.log(LogLevelEnum.error, 'Merge ' + pr_number + ' failed (' + e.status + ') ' + e.message)
                   log.log(LogLevelEnum.error, 'Request: ' + e.request.url)
                   process.exit(5)
                 })
@@ -106,7 +114,7 @@ gh.init()
               let errors = m2mSpec.messages2Text(messages)
               log.log(LogLevelEnum.error, 'specification is not valid ' + specname + 'Proceed manually')
               gh.addIssueComment(
-                pullNumber,
+                pr_number!,
                 "**$${\\color{red}Proceed\\space manually}$$**\nSpecification '" + specname + "' is not valid.\n" + errors
               )
                 .then(() => {
@@ -120,7 +128,7 @@ gh.init()
           } else log.log(LogLevelEnum.error, 'specification not found in yaml directory ' + specname)
         } else {
           gh.addIssueComment(
-            pullNumber,
+            pr_number!,
             "**$${\\color{red}Proceed\\space manually}$$**\nSpecification '" + specname + "' not found in pull request"
           )
             .then(() => {
