@@ -35,6 +35,15 @@ if (options['pr_number']) {
 ConfigSpecification.yamlDir = yamlDir
 
 let log = new Logger('validate')
+
+function logAndExit(e:any){
+  let step = ""
+  if( e.step)
+    step =e.step
+  log.log(LogLevelEnum.error, step + " " + e.message)
+  process.exit(5)
+
+}
 if (!fs.existsSync(yamlDir)) fs.mkdirSync(yamlDir, { recursive: true })
 // read gh token and pull request number from env
 // download files
@@ -103,7 +112,7 @@ gh.init()
                 .catch((e) => {
                   log.log(LogLevelEnum.error, 'Merge ' + pr_number + ' failed (' + e.status + ') ' + e.message)
                   log.log(LogLevelEnum.error, 'Request: ' + e.request.url)
-                  process.exit(5)
+                  logAndExit(e)
                 })
             } else {
               let m: string = ''
@@ -113,12 +122,11 @@ gh.init()
                 pr_number!,
                 "**$${\\color{red}Proceed\\space manually}$$**\nSpecification '" + specname + "' is not valid.\n" + errors
               )
-                .then(() => {
-                  process.exit(3)
+                .then((e) => {
+                  logAndExit(e)
                 })
                 .catch((e) => {
-                  log.log(LogLevelEnum.error, e.message)
-                  process.exit(5)
+                  logAndExit(e)
                 })
             }
           } else log.log(LogLevelEnum.error, 'specification not found in yaml directory ' + specname)
@@ -127,21 +135,18 @@ gh.init()
             pr_number!,
             "**$${\\color{red}Proceed\\space manually}$$**\nSpecification '" + specname + "' not found in pull request"
           )
-            .then(() => {
-              process.exit(4)
+            .then((e) => {
+              logAndExit(e)
             })
             .catch((e) => {
-              log.log(LogLevelEnum.error, e.message)
-              process.exit(5)
+              logAndExit(e)
             })
         }
       })
       .catch((e) => {
-        log.log(LogLevelEnum.error, e.message)
-        process.exit(5)
+        logAndExit(e)
       })
   })
   .catch((e) => {
-    log.log(LogLevelEnum.error, e.message)
-    process.exit(5)
+    logAndExit(e)
   })

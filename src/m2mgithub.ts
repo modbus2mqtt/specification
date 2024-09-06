@@ -213,7 +213,7 @@ export class M2mGitHub {
     return new Promise<number>((resolve, reject) => {
       if (null == this.octokit) reject(new Error('No Github token configured'))
       else
-        this.octokit.issues
+        this.octokit.rest.issues
           .create({
             owner: githubPublicNames.publicModbus2mqttOwner,
             repo: githubPublicNames.modbus2mqttRepo,
@@ -221,7 +221,7 @@ export class M2mGitHub {
             body: content,
           })
           .then((res) => {
-            this.octokit!.pulls.create({
+            this.octokit!.rest.pulls.create({
               owner: githubPublicNames.publicModbus2mqttOwner,
               body: content + '\nCloses #' + res.data.number,
               repo: githubPublicNames.modbus2mqttRepo,
