@@ -78,6 +78,7 @@ gh.init()
       pr_number = Number.parseInt(process.env.PR_NUMBER)
     gh.downloadPullRequest(pr_number!)
       .then((pr) => {
+        log.log(LogLevelEnum.notice, "pull request downloaded")
         let specname: string | undefined
         if (pr.files != undefined)
           pr.files.forEach((file) => {
@@ -103,16 +104,12 @@ gh.init()
                       "' has no issues"
                   )
                     .then(() => {
+                      log.log(LogLevelEnum.notice, "Issue Comment added")
                       process.exit(0)
                     })
                     .catch((e) => {
                       logAndExit(e)
                     })
-                .catch((e) => {
-                  log.log(LogLevelEnum.error, 'Merge ' + pr_number + ' failed (' + e.status + ') ' + e.message)
-                  log.log(LogLevelEnum.error, 'Request: ' + e.request.url)
-                  logAndExit(e)
-                })
             } else {
               let m: string = ''
               let errors = m2mSpec.messages2Text(messages)
