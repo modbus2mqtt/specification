@@ -87,14 +87,11 @@ gh.init()
             let messages = m2mSpec.validate('en')
             if (messages.length == 0) {
               log.log(LogLevelEnum.notice, 'specification ' + specname + 'is valid')
-              gh.mergePullRequest(pr_number!, 'Commit of ' + specname)
-                .then(() => {
-                  log.log(LogLevelEnum.notice, 'Pull Request merged successfully')
-                  gh.addIssueComment(
+              gh.addIssueComment(
                     pr_number!,
-                    "**$${\\color{green}Merged successfully\\space successfully}$$**\nSpecification '" +
+                    "**$${\\color{green}Validated\\space successfully}$$**\nSpecification '" +
                       specname +
-                      "' has been merged"
+                      "' has no issues"
                   )
                     .then(() => {
                       process.exit(0)
@@ -103,7 +100,6 @@ gh.init()
                       log.log(LogLevelEnum.error, e.message)
                       process.exit(5)
                     })
-                })
                 .catch((e) => {
                   log.log(LogLevelEnum.error, 'Merge ' + pr_number + ' failed (' + e.status + ') ' + e.message)
                   log.log(LogLevelEnum.error, 'Request: ' + e.request.url)
