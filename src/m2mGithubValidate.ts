@@ -48,7 +48,7 @@ export class M2mGithubValidate extends M2mGitHub {
   }
   downloadPullRequest(pullNumber: number): Promise<IpullRequest> {
     return new Promise<IpullRequest>((resolve, reject) => {
-      this.octokit!.pulls.get({
+      this.octokit!.rest.pulls.get({
         owner: githubPublicNames.publicModbus2mqttOwner,
         repo: githubPublicNames.modbus2mqttRepo,
         pull_number: pullNumber
