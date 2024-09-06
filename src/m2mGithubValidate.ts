@@ -48,14 +48,14 @@ export class M2mGithubValidate extends M2mGitHub {
   }
   downloadPullRequest(pullNumber: number): Promise<IpullRequest> {
     return new Promise<IpullRequest>((resolve, reject) => {
-      this.octokit!.rest.pulls.get({
+      this.octokit!.pulls.get({
         owner: githubPublicNames.publicModbus2mqttOwner,
         repo: githubPublicNames.modbus2mqttRepo,
         pull_number: pullNumber,
       })
         .then((pull) => {
           debug('listFiles')
-          this.octokit!.rest.pulls.listFiles({
+          this.octokit!.pulls.listFiles({
             owner: githubPublicNames.publicModbus2mqttOwner,
             repo: githubPublicNames.modbus2mqttRepo,
             pull_number: pullNumber,
@@ -91,7 +91,7 @@ export class M2mGithubValidate extends M2mGitHub {
             })
         })
         .catch((e) => {
-          if (e.step == undefined) e.step = 'getPull'
+           e.step = 'getPull'
           debug(JSON.stringify(e))
           reject(e)
         })
@@ -99,7 +99,7 @@ export class M2mGithubValidate extends M2mGitHub {
   }
   closePullRequest(pullNumber: number): Promise<void> {
     return new Promise<void>((resolve, reject) => {
-      this.octokit!.rest.pulls.update({
+      this.octokit!.pulls.update({
         owner: githubPublicNames.publicModbus2mqttOwner,
         repo: githubPublicNames.modbus2mqttRepo,
         pull_number: pullNumber,
@@ -156,7 +156,7 @@ export class M2mGithubValidate extends M2mGitHub {
   }
   mergePullRequest(pullNumber: number, title?: string): Promise<void> {
     return new Promise<void>((resolve, reject) => {
-      this.octokit!.rest.pulls.merge({
+      this.octokit!.pulls.merge({
         owner: githubPublicNames.publicModbus2mqttOwner,
         repo: githubPublicNames.modbus2mqttRepo,
         pull_number: pullNumber,
