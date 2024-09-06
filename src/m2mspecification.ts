@@ -33,7 +33,7 @@ import {
   Iselect,
   Itext,
 } from '@modbus2mqtt/specification.shared'
-import { ConfigSpecification } from './configspec'
+import { ConfigSpecification, getSpecificationImageOrDocumentUrl } from './configspec'
 import { ConverterMap } from './convertermap'
 import { LogLevelEnum, Logger } from './log'
 import { Observable, Subject } from 'rxjs'
@@ -346,9 +346,9 @@ export class M2mSpecification implements IspecificationValidator, Ispecification
     spec.files.forEach((fs) => {
       if (fs.fileLocation == FileLocation.Local) files.push(fs.url.replace(/^\//g, ''))
     })
-    if (files.length > 0) {
-      let p = path.dirname(files[0])
-      files.push(join(p, 'files.yaml'))
+    if (spec.files.length > 0) {
+      let filesName=join(getSpecificationImageOrDocumentUrl('', spec.filename, 'files.yaml'))
+      files.push(filesName.replace(/^\//g, ''))
     }
     files.push(join('specifications', spec.filename + '.yaml'))
     return files

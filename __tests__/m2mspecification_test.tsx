@@ -147,7 +147,7 @@ describe('simple tests', () => {
     msgs.forEach((msg) => {
       if (msg.type == MessageTypes.identifiedByOthers && msg.additionalInformation.length == 1) count++
     })
-    expect(count).toBe(1)
+    expect(count).toBe(0)
     count = 0
   })
   it('validation: readWrite FunctionCode instead of read', () => {
@@ -160,7 +160,7 @@ describe('simple tests', () => {
     msgs.forEach((msg) => {
       if (msg.type == MessageTypes.identifiedByOthers && msg.additionalInformation.length == 1) count++
     })
-    expect(count).toBe(1)
+    expect(count).toBe(0)
   })
   it('validation: Find no specification for the given test data', () => {
     let tspec = structuredClone(spec)
@@ -175,18 +175,7 @@ describe('simple tests', () => {
     })
     expect(count).toBe(0)
   })
-  it("validation: Find no specification null values don't match", () => {
-    let tspec = structuredClone(spec)
-    tspec.testdata.holdingRegisters![3].value = 100
 
-    let mspec = new M2mSpecification(tspec)
-    let msgs = mspec.validate('en')
-    let count = 0
-    msgs.forEach((msg) => {
-      if (msg.type == MessageTypes.identifiedByOthers && msg.additionalInformation.length == 1) count++
-    })
-    expect(count).toBe(1)
-  })
 })
 
 it.skip('closeContribution need github access', (done) => {

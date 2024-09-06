@@ -22,7 +22,7 @@ import { ConverterMap } from './convertermap'
 import { IReadRegisterResultOrError, ImodbusValues, M2mSpecification } from './m2mspecification'
 import { Migrator } from './migrator'
 import { M2mGitHub } from './m2mgithub'
-
+import {Debug } from 'debug'
 const log = new Logger('config')
 const secretsLength = 256
 const saltRounds = 8
@@ -53,7 +53,7 @@ export class ConfigSpecification {
   getSpecificationPath(spec: IbaseSpecification): string {
     return ConfigSpecification.yamlDir + '/local/specifications/' + spec.filename + '.yaml'
   }
-  private getLocalFilesPath(specfilename: string): string {
+  static getLocalFilesPath(specfilename: string): string {
     return join(ConfigSpecification.yamlDir ,getSpecificationImageOrDocumentUrl('local', specfilename, ''))
   }
   private getPublicFilesPath(specfilename: string): string {
@@ -63,19 +63,23 @@ export class ConfigSpecification {
     return join(ConfigSpecification.yamlDir ,getSpecificationImageOrDocumentUrl('contributed', specfilename, ''))
   }
   appendSpecificationUrl(specfilename: string, url: IimageAndDocumentUrl): IimageAndDocumentUrl[] | undefined {
-    let filesPath = this.getLocalFilesPath(specfilename)
+    let filesPath = ConfigSpecification.getLocalFilesPath(specfilename)
     if (filesPath && !fs.existsSync(filesPath)) fs.mkdirSync(filesPath, { recursive: true })
 
     let files: IimageAndDocumentUrl[] = []
+    let filesName = join( filesPath, 'files.yaml')
     if (fs.existsSync( filesPath)) {
-      let filesName = join( filesPath, 'files.yaml')
       try {
         let content = fs.readFileSync(filesName, { encoding: 'utf8' })
         files = parse(content.toString())
       } catch (e: any) {
         log.log(LogLevelEnum.error, 'Unable to read Files directory for ' + filesName + '\n' + JSON.stringify(e))
       }
-      if (files.find((uf) => uf.url == url.url && uf.usage == url.usage) == null) {
+    } else {
+      // 'Path does not exist ' 
+    }
+
+    if (files.find((uf) => uf.url == url.url && uf.usage == url.usage) == null) {
         files.push(url)
         fs.writeFileSync(filesName, stringify(files), {
           encoding: 'utf8',
@@ -83,9 +87,6 @@ export class ConfigSpecification {
         })
         let spec = ConfigSpecification.specifications.find((spec) => spec.filename == specfilename)
         if (spec) spec.files = files
-      }
-    } else {
-      log.log(LogLevelEnum.error, 'Path does not exist ' + filesPath)
     }
     return files ? files : undefined
   }
@@ -444,7 +445,7 @@ export class ConfigSpecification {
         // cloning with attached files
         let filespath = this.getPublicFilesPath(spec.filename)
         if (SpecificationStatus.contributed == spec.status) filespath = this.getContributedFilesPath(spec.filename)
-        let localFilesPath = join(ConfigSpecification.yamlDir, this.getLocalFilesPath(spec.filename))
+        let localFilesPath = join(ConfigSpecification.yamlDir, ConfigSpecification.getLocalFilesPath(spec.filename))
         filespath = join(ConfigSpecification.yamlDir, filespath)
         if (!fs.existsSync(localFilesPath) && fs.existsSync(filespath)) {
           fs.cpSync(filespath, localFilesPath, { recursive: true })

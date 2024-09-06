@@ -6,8 +6,6 @@ import * as fs from 'fs'
 import { M2mGithubValidate } from './m2mGithubValidate'
 import path from 'path'
 import { M2mSpecification } from './m2mspecification'
-const debug = require('debug')('validate')
-
 declare global {
   namespace NodeJS {
     interface ProcessEnv {
@@ -26,6 +24,8 @@ let options = cli.opts()
 if (options['yaml']) {
   yamlDir = options['yaml']
 }
+else
+  yamlDir = "validation_dir"
 ConfigSpecification.yamlDir = yamlDir
 
 let log = new Logger('validate')
@@ -50,11 +50,11 @@ let gh = new M2mGithubValidate(process.env.GITHUB_TOKEN, yamlDir)
 gh.init()
   .then((hasGhToken) => {
     if (process.env.PR_NUMBER == undefined) {
-      log.log(LogLevelEnum.error, 'No Pull Request Number passed to environment variable ')
+      log.log(LogLevelEnum.error, 'No Pull Request Number passed to environment variable PR_NUMBER')
       process.exit(2)
     }
     if (!hasGhToken) {
-      log.log(LogLevelEnum.error, 'No Pull Request Number passed to environment variable ')
+      log.log(LogLevelEnum.error, 'No Github Access Token passed to environment variable GITHUB_TOKEN')
       process.exit(2)
     }
 
@@ -62,12 +62,11 @@ gh.init()
     gh.downloadPullRequest(pullNumber)
       .then((pr) => {
         let specname: string | undefined
-        debug('getPullRequest finished')
         if (pr.files != undefined)
           pr.files.forEach((file) => {
             if (file.endsWith('.yaml') && -1 == file.indexOf('/files.yaml')) {
               specname = path.parse(file).name
-              debug('specname file exists ' + specname + '=' + file)
+              //'specname file exists ' + specname + '=' + file
             }
           })
         if (specname != undefined) {
@@ -104,9 +103,6 @@ gh.init()
                 })
             } else {
               let m: string = ''
-              messages.forEach((msg) => {
-                debug(JSON.stringify(msg))
-              })
               let errors = m2mSpec.messages2Text(messages)
               log.log(LogLevelEnum.error, 'specification is not valid ' + specname + 'Proceed manually')
               gh.addIssueComment(
