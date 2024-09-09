@@ -12,6 +12,7 @@ declare global {
     interface ProcessEnv {
       GITHUB_TOKEN: string
       PR_NUMBER: string
+      GITHUB_OUTPUT: string
     }
   }
 }
@@ -74,8 +75,11 @@ function validate() {
       let messages: Imessage[] = []
       let specnames: string = ''
       let lastSpec: IbaseSpecification | undefined
+      let specsOnly = true
       data.files.forEach((fname) => {
-        if(fname.startsWith("specifications/")){
+        if (!fname.startsWith('specifications/')) {
+          specsOnly = false
+        } else if (!fname.startsWith('specifications/files/')) {
           let specname = fname.substring('specifications/'.length)
           specnames = specnames + ', ' + specname
           let fs = ConfigSpecification.getSpecificationByFilename(specname)
@@ -83,43 +87,48 @@ function validate() {
             let m2mSpec = new M2mSpecification(fs)
             lastSpec = fs
             messages.concat(m2mSpec.validate('en'))
-          }  
+          }
         }
       })
-      if (specnames.length > 0) specnames = specnames.substring(2)
-      else logAndExit(new Error('No specifications in pull request ' + pr_number))
-      if (messages.length == 0) {
-        log.log(LogLevelEnum.notice, 'specifications ' + specnames + ' are valid')
-        gh.addIssueComment(
-          pr_number!,
-          "**$${\\color{green}\\space ' + specnames + '\\space validated\\space successfully}$$**\nSpecifications '" +
-            specnames +
-            "' have no issues"
-        )
-          .then(() => {
-            log.log(LogLevelEnum.notice, 'Issue Comment added')
-            process.exit(0)
-          })
-          .catch((e) => {
-            logAndExit(e)
-          })
-      } else if (lastSpec) {
-        let m: string = ''
+      if (specsOnly) fs.appendFileSync(process.env.GITHUB_OUTPUT, 'SPECS_ONLY=true\n')
+      if (specsOnly && specnames.length > 0) {
+        specnames = specnames.substring(2)
+        if (messages.length == 0) {
+          log.log(LogLevelEnum.notice, 'specifications ' + specnames + ' are valid')
+          gh.addIssueComment(
+            pr_number!,
+            "**$${\\color{green}\\space ' + specnames + '\\space validated\\space successfully}$$**\nSpecifications '" +
+              specnames +
+              "' have no issues"
+          )
+            .then(() => {
+              log.log(LogLevelEnum.notice, 'Issue Comment added')
+              process.exit(0)
+            })
+            .catch((e) => {
+              logAndExit(e)
+            })
+        } else if (lastSpec) {
+          let m: string = ''
 
-        let errors = M2mSpecification.messages2Text(lastSpec, messages)
-        log.log(LogLevelEnum.error, 'not all specifications of \\space ' + specnames + '\\space are valid\\space Proceed manually')
-        gh.addIssueComment(
-          pr_number!,
-          "**$${\\color{red}Proceed\\space manually}$$**\nSpecification '" + specnames + "'\\space are not valid.\n" + errors
-        )
-          .then((e) => {
-            logAndExit(e)
-          })
-          .catch((e) => {
-            logAndExit(e)
-          })
-      } else {
-        logAndExit(new Error('No specification found'))
+          let errors = M2mSpecification.messages2Text(lastSpec, messages)
+          log.log(
+            LogLevelEnum.error,
+            'not all specifications of \\space ' + specnames + '\\space are valid\\space Proceed manually'
+          )
+          gh.addIssueComment(
+            pr_number!,
+            "**$${\\color{red}Proceed\\space manually}$$**\nSpecification '" + specnames + "'\\space are not valid.\n" + errors
+          )
+            .then((e) => {
+              logAndExit(e)
+            })
+            .catch((e) => {
+              logAndExit(e)
+            })
+        } else {
+          logAndExit(new Error('No specification found'))
+        }
       }
     })
     .catch((e) => {

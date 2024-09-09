@@ -51,20 +51,20 @@ export class M2mGithubValidate {
 
   listPullRequestFiles(owner: string, pull_number: number): Promise<{ pr_number: number; files: string[] }> {
     return new Promise<{ pr_number: number; files: string[] }>((resolve, reject) => {
-          this.octokit!.pulls.listFiles({
-            owner: githubPublicNames.publicModbus2mqttOwner,
-            repo: githubPublicNames.modbus2mqttRepo,
-            pull_number: pull_number,
+      this.octokit!.pulls.listFiles({
+        owner: githubPublicNames.publicModbus2mqttOwner,
+        repo: githubPublicNames.modbus2mqttRepo,
+        pull_number: pull_number,
+      })
+        .then((files) => {
+          let f: string[] = []
+          files.data.forEach((file) => {
+            if (['added', 'modified', 'renamed', 'copied', 'changed'].includes(file.status)) f.push(file.filename)
           })
-            .then((files) => {
-              let f: string[] = []
-              files.data.forEach((file) => {
-                if (['added', 'modified', 'renamed', 'copied', 'changed'].includes(file.status)) f.push(file.filename)
-              })
-              resolve({ pr_number: pull_number, files: f })
-            })
-            .catch(reject)
+          resolve({ pr_number: pull_number, files: f })
         })
+        .catch(reject)
+    })
   }
   closePullRequest(pullNumber: number): Promise<void> {
     return new Promise<void>((resolve, reject) => {

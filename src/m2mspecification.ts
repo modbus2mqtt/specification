@@ -345,7 +345,7 @@ export class M2mSpecification implements IspecificationValidator, Ispecification
           gh.getPullRequest(spec.pullNumber!)
             .then((pullStatus) => {
               try {
-                let cspec= new ConfigSpecification()
+                let cspec = new ConfigSpecification()
                 if (pullStatus.merged) {
                   cspec.changeContributionStatus(spec.filename, SpecificationStatus.published, undefined)
                 } else if (pullStatus.closed_at != null) {
@@ -953,7 +953,7 @@ export class M2mSpecification implements IspecificationValidator, Ispecification
           this.ghPollIntervalIndexCount = 0
         }
         if (!M2mSpecification.inCloseContribution) {
-          M2mSpecification.inCloseContribution =true
+          M2mSpecification.inCloseContribution = true
           this.closeContribution()
             .then((pullStatus) => {
               debug('contribution closed for pull Number ' + spec.pullNumber)
@@ -967,7 +967,9 @@ export class M2mSpecification implements IspecificationValidator, Ispecification
               }
             })
             .catch(error)
-            .finally(() => {M2mSpecification.inCloseContribution =false})
+            .finally(() => {
+              M2mSpecification.inCloseContribution = false
+            })
         }
       }
       contribution.pollCount++

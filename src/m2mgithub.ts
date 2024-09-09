@@ -42,9 +42,7 @@ export class M2mGitHub {
             type: 'all',
           })
           .then((repos) => {
-            let found = repos.data.find((repo) => 
-              repo.name == githubPublicNames.modbus2mqttRepo
-            )
+            let found = repos.data.find((repo) => repo.name == githubPublicNames.modbus2mqttRepo)
             if (found == null && !M2mGitHub.forking) this.createOwnModbus2MqttRepo().then(resolve).catch(reject)
             else {
               if (found != null) M2mGitHub.forking = false
