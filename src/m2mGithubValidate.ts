@@ -49,34 +49,22 @@ export class M2mGithubValidate {
     })
   }
 
-  listPullRequestFiles(owner: string, sha: string): Promise<{ pr_number: number; files: string[] }> {
+  listPullRequestFiles(owner: string, pull_number: number): Promise<{ pr_number: number; files: string[] }> {
     return new Promise<{ pr_number: number; files: string[] }>((resolve, reject) => {
-      this.octokit!.rest.repos.listPullRequestsAssociatedWithCommit({
-        owner: owner,
-        repo: githubPublicNames.modbus2mqttRepo,
-        commit_sha: sha,
-      })
-        .then((data: any) => {
-          if (data.data.length <= 0) {
-            reject(new Error('No Pull request for for sha ' + sha))
-            return
-          }
           this.octokit!.pulls.listFiles({
             owner: githubPublicNames.publicModbus2mqttOwner,
             repo: githubPublicNames.modbus2mqttRepo,
-            pull_number: data.data[0].number,
+            pull_number: pull_number,
           })
             .then((files) => {
               let f: string[] = []
               files.data.forEach((file) => {
                 if (['added', 'modified', 'renamed', 'copied', 'changed'].includes(file.status)) f.push(file.filename)
               })
-              resolve({ pr_number: data.data[0].number, files: f })
+              resolve({ pr_number: pull_number, files: f })
             })
             .catch(reject)
         })
-        .catch(reject)
-    })
   }
   closePullRequest(pullNumber: number): Promise<void> {
     return new Promise<void>((resolve, reject) => {

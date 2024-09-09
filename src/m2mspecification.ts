@@ -345,11 +345,13 @@ export class M2mSpecification implements IspecificationValidator, Ispecification
           gh.getPullRequest(spec.pullNumber!)
             .then((pullStatus) => {
               try {
+                let cspec= new ConfigSpecification()
                 if (pullStatus.merged) {
-                  new ConfigSpecification().changeContributionStatus(spec.filename, SpecificationStatus.published, undefined)
+                  cspec.changeContributionStatus(spec.filename, SpecificationStatus.published, undefined)
                 } else if (pullStatus.closed_at != null) {
-                  new ConfigSpecification().changeContributionStatus(spec.filename, SpecificationStatus.added, undefined)
+                  cspec.changeContributionStatus(spec.filename, SpecificationStatus.added, undefined)
                 }
+                spec = ConfigSpecification.getSpecificationByFilename(spec.filename)!
                 if (spec.status != SpecificationStatus.contributed) gh.deleteSpecBranch(spec.filename)
                 gh.fetchPublicFiles()
                 resolve({ merged: pullStatus.merged, closed: pullStatus.closed_at != null, pullNumber: spec.pullNumber! })
