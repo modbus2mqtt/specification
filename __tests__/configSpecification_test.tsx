@@ -14,7 +14,6 @@ import {
 import { IReadRegisterResultOrError } from '../src/m2mspecification'
 import { ImodbusValues } from '../dist'
 
-
 ConfigSpecification['yamlDir'] = yamlDir
 ConfigSpecification.setMqttdiscoverylanguage('en')
 let testdata: ImodbusValues = {

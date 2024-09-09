@@ -1,6 +1,7 @@
 import { join } from 'path'
 import * as fs from 'fs'
 import { M2mGitHub, githubPublicNames } from './m2mgithub'
+import { Octokit } from '@octokit/rest'
 let path = require('path')
 
 const debug = require('debug')('m2mgithubvalidate')
@@ -10,14 +11,15 @@ export interface IpullRequest {
   closed: boolean
   pullNumber: number
 }
-export class M2mGithubValidate extends M2mGitHub {
+export class M2mGithubValidate {
   private localDir: string
-  constructor(
-    personalAccessToken: string,
-    private yamlDir: string
-  ) {
-    super(personalAccessToken, join(yamlDir, 'public'))
-    this.localDir = join(this.yamlDir, 'local')
+  private octokit: Octokit | null
+  constructor(personalAccessToken: string | null) {
+    this.octokit = null
+    if (personalAccessToken)
+      this.octokit = new Octokit({
+        auth: personalAccessToken,
+      })
   }
   private downloadFile(sha: string, filename: string): Promise<void> {
     return new Promise<void>((resolve, reject) => {
@@ -46,55 +48,34 @@ export class M2mGithubValidate extends M2mGitHub {
         })
     })
   }
-  downloadPullRequest(pullNumber: number): Promise<IpullRequest> {
-    return new Promise<IpullRequest>((resolve, reject) => {
-      this.octokit!.rest.pulls.get({
-        owner: githubPublicNames.publicModbus2mqttOwner,
+
+  listPullRequestFiles(owner: string, sha: string): Promise<{ pr_number: number; files: string[] }> {
+    return new Promise<{ pr_number: number; files: string[] }>((resolve, reject) => {
+      this.octokit!.rest.repos.listPullRequestsAssociatedWithCommit({
+        owner: owner,
         repo: githubPublicNames.modbus2mqttRepo,
-        pull_number: pullNumber
+        commit_sha: sha,
       })
-        .then((pull) => {
-          debug('listFiles')
+        .then((data: any) => {
+          if (data.data.length <= 0) {
+            reject(new Error('No Pull request for for sha ' + sha))
+            return
+          }
           this.octokit!.pulls.listFiles({
             owner: githubPublicNames.publicModbus2mqttOwner,
             repo: githubPublicNames.modbus2mqttRepo,
-            pull_number: pullNumber,
+            pull_number: data.data[0].number,
           })
             .then((files) => {
               let f: string[] = []
-              let filePromises: Promise<void>[] = []
               files.data.forEach((file) => {
-                f.push(file.filename)
-                filePromises.push(this.downloadFile(file.sha, file.filename))
+                if (['added', 'modified', 'renamed', 'copied', 'changed'].includes(file.status)) f.push(file.filename)
               })
-              Promise.all(filePromises)
-                .then(() => {
-                  debug('success')
-                  let pr: IpullRequest = {
-                    merged: pull.data.merged,
-                    closed: pull.data.closed_at != null,
-                    pullNumber: pull.data.number,
-                    files: f,
-                  }
-                  resolve(pr)
-                })
-                .catch((e) => {
-                  if (e.step == undefined) e.step = 'downloadFile'
-                  debug(JSON.stringify(e))
-                  reject(e)
-                })
+              resolve({ pr_number: data.data[0].number, files: f })
             })
-            .catch((e) => {
-              if (e.step == undefined) e.step = 'listFiles'
-              debug(JSON.stringify(e))
-              reject(e)
-            })
+            .catch(reject)
         })
-        .catch((e) => {
-           e.step = 'getPull'
-          debug(JSON.stringify(e))
-          reject(e)
-        })
+        .catch(reject)
     })
   }
   closePullRequest(pullNumber: number): Promise<void> {
@@ -138,22 +119,13 @@ export class M2mGithubValidate extends M2mGitHub {
         .then(() => {
           resolve()
         })
-        .catch((e)=>{ e.step="addIssueComment" 
+        .catch((e) => {
+          e.step = 'addIssueComment'
           reject(e)
         })
     })
   }
 
-  override init(): Promise<boolean> {
-    return new Promise<boolean>((resolve, reject) => {
-      try {
-        this.fetchPublicFiles()
-        resolve(true)
-      } catch (e) {
-        reject(e)
-      }
-    })
-  }
   mergePullRequest(pullNumber: number, title?: string): Promise<void> {
     return new Promise<void>((resolve, reject) => {
       this.octokit!.pulls.merge({

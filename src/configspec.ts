@@ -22,7 +22,7 @@ import { ConverterMap } from './convertermap'
 import { IReadRegisterResultOrError, ImodbusValues, M2mSpecification } from './m2mspecification'
 import { Migrator } from './migrator'
 import { M2mGitHub } from './m2mgithub'
-import {Debug } from 'debug'
+import { Debug } from 'debug'
 const log = new Logger('config')
 const secretsLength = 256
 const saltRounds = 8
@@ -54,21 +54,21 @@ export class ConfigSpecification {
     return ConfigSpecification.yamlDir + '/local/specifications/' + spec.filename + '.yaml'
   }
   static getLocalFilesPath(specfilename: string): string {
-    return join(ConfigSpecification.yamlDir ,getSpecificationImageOrDocumentUrl('local', specfilename, ''))
+    return join(ConfigSpecification.yamlDir, getSpecificationImageOrDocumentUrl('local', specfilename, ''))
   }
   private getPublicFilesPath(specfilename: string): string {
-    return join(ConfigSpecification.yamlDir ,getSpecificationImageOrDocumentUrl('public', specfilename, ''))
+    return join(ConfigSpecification.yamlDir, getSpecificationImageOrDocumentUrl('public', specfilename, ''))
   }
   private getContributedFilesPath(specfilename: string): string {
-    return join(ConfigSpecification.yamlDir ,getSpecificationImageOrDocumentUrl('contributed', specfilename, ''))
+    return join(ConfigSpecification.yamlDir, getSpecificationImageOrDocumentUrl('contributed', specfilename, ''))
   }
   appendSpecificationUrl(specfilename: string, url: IimageAndDocumentUrl): IimageAndDocumentUrl[] | undefined {
     let filesPath = ConfigSpecification.getLocalFilesPath(specfilename)
     if (filesPath && !fs.existsSync(filesPath)) fs.mkdirSync(filesPath, { recursive: true })
 
     let files: IimageAndDocumentUrl[] = []
-    let filesName = join( filesPath, 'files.yaml')
-    if (fs.existsSync( filesPath)) {
+    let filesName = join(filesPath, 'files.yaml')
+    if (fs.existsSync(filesPath)) {
       try {
         let content = fs.readFileSync(filesName, { encoding: 'utf8' })
         files = parse(content.toString())
@@ -76,17 +76,17 @@ export class ConfigSpecification {
         log.log(LogLevelEnum.error, 'Unable to read Files directory for ' + filesName + '\n' + JSON.stringify(e))
       }
     } else {
-      // 'Path does not exist ' 
+      // 'Path does not exist '
     }
 
     if (files.find((uf) => uf.url == url.url && uf.usage == url.usage) == null) {
-        files.push(url)
-        fs.writeFileSync(filesName, stringify(files), {
-          encoding: 'utf8',
-          flag: 'w',
-        })
-        let spec = ConfigSpecification.specifications.find((spec) => spec.filename == specfilename)
-        if (spec) spec.files = files
+      files.push(url)
+      fs.writeFileSync(filesName, stringify(files), {
+        encoding: 'utf8',
+        flag: 'w',
+      })
+      let spec = ConfigSpecification.specifications.find((spec) => spec.filename == specfilename)
+      if (spec) spec.files = files
     }
     return files ? files : undefined
   }
@@ -260,35 +260,35 @@ export class ConfigSpecification {
     delete fileSpec['identification']
     // delete (fileSpec as any)['status'];
 
-      modbusSpec.entities.forEach((entity) => {
-        if (entity.modbusValue)
-          for (let idx = 0; idx < entity.modbusValue.length; idx++) {
-            switch (entity.registerType) {
-              case ModbusRegisterType.AnalogInputs:
-                fileSpec.testdata.analogInputs?.push({
-                  address: entity.modbusAddress + idx,
-                  value: entity.modbusValue[idx],
-                  error: entity.modbusError,
-                })
-                break
-              case ModbusRegisterType.HoldingRegister:
-                fileSpec.testdata.holdingRegisters?.push({
-                  address: entity.modbusAddress + idx,
-                  value: entity.modbusValue[idx],
-                  error: entity.modbusError,
-                })
-                break
-              case ModbusRegisterType.Coils:
-                fileSpec.testdata.coils?.push({
-                  address: entity.modbusAddress + idx,
-                  value: entity.modbusValue[idx],
-                  error: entity.modbusError,
-                })
-                break
-            }
-            entity.converter.registerTypes = []
+    modbusSpec.entities.forEach((entity) => {
+      if (entity.modbusValue)
+        for (let idx = 0; idx < entity.modbusValue.length; idx++) {
+          switch (entity.registerType) {
+            case ModbusRegisterType.AnalogInputs:
+              fileSpec.testdata.analogInputs?.push({
+                address: entity.modbusAddress + idx,
+                value: entity.modbusValue[idx],
+                error: entity.modbusError,
+              })
+              break
+            case ModbusRegisterType.HoldingRegister:
+              fileSpec.testdata.holdingRegisters?.push({
+                address: entity.modbusAddress + idx,
+                value: entity.modbusValue[idx],
+                error: entity.modbusError,
+              })
+              break
+            case ModbusRegisterType.Coils:
+              fileSpec.testdata.coils?.push({
+                address: entity.modbusAddress + idx,
+                value: entity.modbusValue[idx],
+                error: entity.modbusError,
+              })
+              break
           }
-      })
+          entity.converter.registerTypes = []
+        }
+    })
     if (fileSpec.testdata.analogInputs?.length == 0) delete fileSpec.testdata.analogInputs
     if (fileSpec.testdata.holdingRegisters?.length == 0) delete fileSpec.testdata.holdingRegisters
     if (fileSpec.testdata.coils?.length == 0) delete fileSpec.testdata.coils
@@ -520,15 +520,14 @@ export class ConfigSpecification {
       })
     )
   }
-  static clearModbusData(spec:IfileSpecification){
-
-    (spec).entities.forEach(ent=>{
+  static clearModbusData(spec: IfileSpecification) {
+    spec.entities.forEach((ent) => {
       delete (ent as any).modbusError
       delete (ent as any).modbusValue
       delete (ent as any).mqttValue
       delete (ent as any).identified
-      })
-      delete (spec as any).identified
+    })
+    delete (spec as any).identified
   }
 
   static getSpecificationByFilename(filename: string): IfileSpecification | undefined {
@@ -556,16 +555,14 @@ export class ConfigSpecification {
       }
       ConfigSpecification.clearModbusData(rc)
       return rc
-      
     }
-    
+
     let rc = structuredClone(
       ConfigSpecification.specifications.find((spec) => {
         return spec.filename === filename
       })
     )
-    if( rc)
-      ConfigSpecification.clearModbusData(rc)
+    if (rc) ConfigSpecification.clearModbusData(rc)
     return rc
   }
   static getFileNameFromSlaveId(slaveid: number): string {

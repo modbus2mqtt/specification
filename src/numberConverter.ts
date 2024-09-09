@@ -18,13 +18,11 @@ export class NumberConverter extends Converter {
         entity.converterParameters != undefined && (entity.converterParameters as Inumber).numberFormat != undefined
           ? (entity.converterParameters as Inumber).numberFormat
           : EnumNumberFormat.default
-          
+
       let v = value.data[0]
-      if( numberFormat == EnumNumberFormat.float32) 
-        if( value.buffer && value.buffer.length>=4)
-          v = value.buffer.readFloatBE()
-        else
-          new Error('NumberConverter.modbus2mqtt: Invalid buffer to convert to Float entityid = ' + entityid)
+      if (numberFormat == EnumNumberFormat.float32)
+        if (value.buffer && value.buffer.length >= 4) v = value.buffer.readFloatBE()
+        else new Error('NumberConverter.modbus2mqtt: Invalid buffer to convert to Float entityid = ' + entityid)
       let multiplier = mspec.getMultiplier(entityid)
       let offset = mspec.getOffset(entityid)
       if (!multiplier) multiplier = 1

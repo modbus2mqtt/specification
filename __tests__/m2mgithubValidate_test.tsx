@@ -24,30 +24,8 @@ beforeAll(() => {
 afterAll(() => {
   fs.rmSync(yamlDir, { recursive: true, force: true })
 })
-function testWait(github: M2mGithubValidate, done: any) {
-  github
-    .init()
-    .then(() => {
-      let title = 'Test'
-      let content = 'Some Text'
-      github
-        .downloadPullRequest(49)
-        .then((pull) => {
-          debug('Commit created successfully')
-          done()
-        })
-        .catch((e) => {
-          debug(github.getInfoFromError(e))
-        })
-    })
-    .catch((e) => {
-      debug(e.message)
-    })
-}
 
 it.skip('validate test requires GITHUB_TOKEN', (done) => {
   expect(process.env.GITHUB_TOKEN).toBeDefined()
-  let github = new M2mGithubValidate(process.env.GITHUB_TOKEN as string, '__tests__/yamlDirValidate')
-
-  testWait(github, done)
+  let github = new M2mGithubValidate(process.env.GITHUB_TOKEN as string)
 }, 10000)

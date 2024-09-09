@@ -42,9 +42,9 @@ export class M2mGitHub {
             type: 'all',
           })
           .then((repos) => {
-            let found = repos.data.find((repo) => {
+            let found = repos.data.find((repo) => 
               repo.name == githubPublicNames.modbus2mqttRepo
-            })
+            )
             if (found == null && !M2mGitHub.forking) this.createOwnModbus2MqttRepo().then(resolve).catch(reject)
             else {
               if (found != null) M2mGitHub.forking = false
@@ -59,34 +59,40 @@ export class M2mGitHub {
       if (null == this.octokit) reject(new Error('No Github token configured'))
       else
         this.octokit.git
-          .listMatchingRefs({
+          .getRef({
             owner: this.ownOwner!,
-            repo: githubPublicNames.modbus2mqttRepo,
+            repo: exports.githubPublicNames.modbus2mqttRepo,
             ref: 'heads/' + branch,
           })
           .then((branches) => {
-            resolve(branches.data.length > 0)
+            resolve(true)
           })
-          .catch(reject)
+          .catch((e) => {
+            debug('get Branch' + e.message)
+            if (e.status == 404) resolve(false)
+            else reject(e)
+          })
     })
   }
   deleteSpecBranch(branch: string): Promise<void> {
     return new Promise<void>((resolve, reject) => {
       if (null == this.octokit) reject(new Error('No Github token configured'))
       else
-        this.hasSpecBranch(branch).then((hasBranch) => {
-          if (hasBranch)
-            this.octokit!.git.deleteRef({
-              owner: this.ownOwner!,
-              repo: githubPublicNames.modbus2mqttRepo,
-              ref: 'heads/' + branch,
-            })
-              .then(() => {
-                resolve()
+        this.hasSpecBranch(branch)
+          .then((hasBranch) => {
+            if (hasBranch)
+              this.octokit!.git.deleteRef({
+                owner: this.ownOwner!,
+                repo: githubPublicNames.modbus2mqttRepo,
+                ref: 'heads/' + branch,
               })
-              .catch(reject)
-          else resolve()
-        })
+                .then(() => {
+                  resolve()
+                })
+                .catch(reject)
+            else resolve()
+          })
+          .catch(reject)
     })
   }
   private createOwnModbus2MqttRepo(): Promise<void> {
@@ -98,13 +104,13 @@ export class M2mGitHub {
         this.octokit!.repos.createFork({
           owner: githubPublicNames.publicModbus2mqttOwner,
           repo: githubPublicNames.modbus2mqttRepo,
-          default_branch_only: true
+          default_branch_only: true,
         })
           .then(() => {
             resolve()
           })
-          .catch(e=>{ 
-          M2mGitHub.forking = false
+          .catch((e) => {
+            M2mGitHub.forking = false
             reject(e)
           })
     })
@@ -167,7 +173,7 @@ export class M2mGitHub {
                 })
                 .catch((e) => {
                   this.isRunning = false
-                  log.log(LogLevelEnum.error, 'checkRepo failed: ' + e.status)
+                  log.log(LogLevelEnum.error, 'checkRepo failed: ' + e.status + ' ' + e.message)
                   this.waitFinished.next()
                 })
             }
@@ -268,6 +274,7 @@ export class M2mGitHub {
     let msg = JSON.stringify(e)
     if (e.message) msg = 'ERROR: ' + e.message
     if (e.status) msg += ' status: ' + e.status
+    if (e.message) msg += ' message: ' + e.message
     if (e.step) msg += ' in ' + e.step
     return msg
   }
@@ -359,10 +366,18 @@ export class M2mGitHub {
       this.waitForOwnModbus2MqttRepo().then(() => {
         this.hasSpecBranch(branchName)
           .then((hasBranch) => {
-            if (hasBranch) reject(new Error('There is already a branch named ' + branchName + 
-                ' Please delete it in your github repository ' + this.ownOwner + '/' +
-                githubPublicNames.modbus2mqttRepo + ' at github.com'
-            ))
+            if (hasBranch)
+              reject(
+                new Error(
+                  'There is already a branch named ' +
+                    branchName +
+                    ' Please delete it in your github repository ' +
+                    this.ownOwner +
+                    '/' +
+                    githubPublicNames.modbus2mqttRepo +
+                    ' at github.com'
+                )
+              )
             else {
               debug('start committing')
               let all: Promise<ITreeParam>[] = []

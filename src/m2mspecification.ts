@@ -88,10 +88,10 @@ export class M2mSpecification implements IspecificationValidator, Ispecification
       }
     }
   }
-  messages2Text(msgs: Imessage[]): string {
+  static messages2Text(spec: IbaseSpecification, msgs: Imessage[]): string {
     let errors: string = ''
     msgs.forEach((msg) => {
-      if (msg.type != MessageTypes.identifiedByOthers) errors += this.getMessageString(msg) + '\n'
+      if (msg.type != MessageTypes.identifiedByOthers) errors += M2mSpecification.getMessageString(spec, msg) + '\n'
     })
     return errors
   }
@@ -104,7 +104,7 @@ export class M2mSpecification implements IspecificationValidator, Ispecification
         if (language == undefined)
           messages.push({ type: MessageTypes.noMqttDiscoveryLanguage, category: MessageCategories.configuration })
         else messages = this.validate(language)
-        let errors: string = this.messages2Text(messages)
+        let errors: string = M2mSpecification.messages2Text(this.settings as IbaseSpecification, messages)
 
         if (errors.length > 0) {
           throw new Error('Validation failed with errors: ' + errors)
@@ -133,6 +133,19 @@ export class M2mSpecification implements IspecificationValidator, Ispecification
         title = title + getSpecificationI18nName(spec, language!)
         if (ConfigSpecification.githubPersonalToken && ConfigSpecification.githubPersonalToken.length) {
           let github = new M2mGitHub(ConfigSpecification.githubPersonalToken, ConfigSpecification.getPublicDir())
+          let restore = function (spec: IbaseSpecification, github: M2mGitHub, reject: (e: any) => void, e: any) {
+            if (spec.status == SpecificationStatus.contributed)
+              new ConfigSpecification().changeContributionStatus(spec.filename, SpecificationStatus.added)
+            github
+              .deleteSpecBranch(spec.filename)
+              .then(() => {
+                reject(e)
+              })
+              .catch((e1) => {
+                log.log(LogLevelEnum.error, 'delete branch: ' + e1.message)
+                reject(e)
+              })
+          }
           github
             .init()
             .then(() => {
@@ -149,11 +162,17 @@ export class M2mSpecification implements IspecificationValidator, Ispecification
                       )
                       resolve(issue)
                     })
-                    .catch(reject)
+                    .catch((e) => {
+                      restore(this.settings as IbaseSpecification, github, reject, e)
+                    })
                 })
-                .catch(reject)
+                .catch((e) => {
+                  restore(this.settings as IbaseSpecification, github, reject, e)
+                })
             })
-            .catch(reject)
+            .catch((e) => {
+              restore(this.settings as IbaseSpecification, github, reject, e)
+            })
         } else throw new Error('Github connection is not configured. Set Github Personal Acces Token in configuration UI first')
       } catch (e) {
         reject(e)
@@ -193,7 +212,7 @@ export class M2mSpecification implements IspecificationValidator, Ispecification
       rcmessage = rcmessage + 'Changes:\n'
       let messages = this.isEqual(publicSpecification)
       messages.forEach((message) => {
-        rcmessage = rcmessage + this.getMessageString(message) + '\n'
+        rcmessage = rcmessage + M2mSpecification.getMessageString(this.settings as IbaseSpecification, message) + '\n'
       })
       // TODO Check backward compatibility
       if (this.notBackwardCompatible) {
@@ -205,7 +224,7 @@ export class M2mSpecification implements IspecificationValidator, Ispecification
     }
     return rcmessage
   }
-  getMessageString(message: Imessage): string {
+  static getMessageString(spec: IbaseSpecification, message: Imessage): string {
     switch (message.type) {
       case MessageTypes.noDocumentation:
         return `No documenation file or URL`
@@ -235,59 +254,66 @@ export class M2mSpecification implements IspecificationValidator, Ispecification
       case MessageTypes.notIdentified:
         return ` The specification can not be identified with it's test data`
       case MessageTypes.differentFilename:
-        this.differentFilename = true
-        return this.getMessageLocal(message, 'Filename has been changed. A new public specification will be created')
+        return M2mSpecification.getMessageLocal(
+          spec,
+          message,
+          'Filename has been changed. A new public specification will be created'
+        )
       case MessageTypes.missingEntity:
-        if (!this.differentFilename) this.notBackwardCompatible = true
-        return this.getMessageLocal(message, 'Entity has been removed', !this.differentFilename)
+        return M2mSpecification.getMessageLocal(spec, message, 'Entity has been removed')
       case MessageTypes.differentConverter:
-        return this.getMessageLocal(message, 'Converter has been changed')
+        return M2mSpecification.getMessageLocal(spec, message, 'Converter has been changed')
       case MessageTypes.addedEntity:
-        return this.getMessageLocal(message, 'Entity has been added')
+        return M2mSpecification.getMessageLocal(spec, message, 'Entity has been added')
       case MessageTypes.differentModbusAddress:
-        return this.getMessageLocal(message, 'Modbus address has been changed')
+        return M2mSpecification.getMessageLocal(spec, message, 'Modbus address has been changed')
       case MessageTypes.differentFunctionCode:
-        return this.getMessageLocal(message, 'Function code has been changed')
+        return M2mSpecification.getMessageLocal(spec, message, 'Function code has been changed')
       case MessageTypes.differentIcon:
-        return this.getMessageLocal(message, 'Icon has been changed')
+        return M2mSpecification.getMessageLocal(spec, message, 'Icon has been changed')
       case MessageTypes.differentTargetParameter:
-        return this.getMessageLocal(message, 'Variable configuration: Target parameter has been changed')
+        return M2mSpecification.getMessageLocal(spec, message, 'Variable configuration: Target parameter has been changed')
       case MessageTypes.differentVariableEntityId:
-        return this.getMessageLocal(message, 'Variable configuration: Referenced entity has been changed')
+        return M2mSpecification.getMessageLocal(spec, message, 'Variable configuration: Referenced entity has been changed')
       case MessageTypes.differentVariableConfiguration:
-        return this.getMessageLocal(message, 'Variable configuration has been changed')
+        return M2mSpecification.getMessageLocal(spec, message, 'Variable configuration has been changed')
       case MessageTypes.differentDeviceClass:
-        return this.getMessageLocal(message, 'Device class has been changed')
+        return M2mSpecification.getMessageLocal(spec, message, 'Device class has been changed')
       case MessageTypes.differentIdentificationMax:
-        return this.getMessageLocal(message, 'Max value has been changed')
+        return M2mSpecification.getMessageLocal(spec, message, 'Max value has been changed')
       case MessageTypes.differentIdentificationMin:
-        return this.getMessageLocal(message, 'Min value has been changed')
+        return M2mSpecification.getMessageLocal(spec, message, 'Min value has been changed')
       case MessageTypes.differentIdentification:
-        return this.getMessageLocal(message, 'Identification has been changed')
+        return M2mSpecification.getMessageLocal(spec, message, 'Identification has been changed')
       case MessageTypes.differentMultiplier:
-        return this.getMessageLocal(message, 'Multiplier has been changed')
+        return M2mSpecification.getMessageLocal(spec, message, 'Multiplier has been changed')
       case MessageTypes.differentOffset:
-        return this.getMessageLocal(message, 'Offset has been changed')
+        return M2mSpecification.getMessageLocal(spec, message, 'Offset has been changed')
       case MessageTypes.differentOptionTable:
-        return this.getMessageLocal(message, 'Options have been changed')
+        return M2mSpecification.getMessageLocal(spec, message, 'Options have been changed')
       case MessageTypes.differentStringlength:
-        return this.getMessageLocal(message, 'String length has been changed')
+        return M2mSpecification.getMessageLocal(spec, message, 'String length has been changed')
       case MessageTypes.differentManufacturer:
-        return this.getMessageLocal(message, 'Manufacturer has been changed')
+        return M2mSpecification.getMessageLocal(spec, message, 'Manufacturer has been changed')
       case MessageTypes.differentModel:
-        return this.getMessageLocal(message, 'Model has been changed')
+        return M2mSpecification.getMessageLocal(spec, message, 'Model has been changed')
       case MessageTypes.differentTranslation:
-        return this.getMessageLocal(message, 'Translation has been changed')
+        return M2mSpecification.getMessageLocal(spec, message, 'Translation has been changed')
 
       case MessageTypes.noMqttDiscoveryLanguage:
-        return this.getMessageLocal(message, 'MQTT Discovery Langauge is not configured')
+        return M2mSpecification.getMessageLocal(spec, message, 'MQTT Discovery Langauge is not configured')
     }
     return 'unknown MessageType : ' + message.type
   }
-  private getMessageLocal(message: Imessage, messageText: string, notBackwardCompatible?: boolean): string {
+  private static getMessageLocal(
+    spec: IbaseSpecification,
+    message: Imessage,
+    messageText: string,
+    notBackwardCompatible?: boolean
+  ): string {
     let msg = structuredClone(messageText)
     if (message.referencedEntity != undefined)
-      return msg + ' ' + getSpecificationI18nEntityName(this.settings as IbaseSpecification, 'en', message.referencedEntity)
+      return msg + ' ' + getSpecificationI18nEntityName(spec as IbaseSpecification, 'en', message.referencedEntity)
     if (message.additionalInformation != undefined) return msg + ' ' + message.additionalInformation
     if (!notBackwardCompatible) return ' This will break compatibilty with previous version'
     return msg
@@ -347,7 +373,7 @@ export class M2mSpecification implements IspecificationValidator, Ispecification
       if (fs.fileLocation == FileLocation.Local) files.push(fs.url.replace(/^\//g, ''))
     })
     if (spec.files.length > 0) {
-      let filesName=join(getSpecificationImageOrDocumentUrl('', spec.filename, 'files.yaml'))
+      let filesName = join(getSpecificationImageOrDocumentUrl('', spec.filename, 'files.yaml'))
       files.push(filesName.replace(/^\//g, ''))
     }
     files.push(join('specifications', spec.filename + '.yaml'))
@@ -374,7 +400,7 @@ export class M2mSpecification implements IspecificationValidator, Ispecification
       let mSpec = this.settings as ImodbusSpecification
       if (mSpec.identified == undefined) mSpec = M2mSpecification.fileToModbusSpecification(this.settings as IfileSpecification)
       else M2mSpecification.setIdentifiedByEntities(mSpec)
-    
+
       if (mSpec.identified != IdentifiedStates.identified)
         rc.push({ type: MessageTypes.notIdentified, category: MessageCategories.validateSpecification })
     }
@@ -555,8 +581,11 @@ export class M2mSpecification implements IspecificationValidator, Ispecification
     if (testdata)
       testdata.forEach((mv) => {
         if (mv.value != undefined)
-          data.set(mv.address, { result: { data: [mv.value], buffer: Buffer.from([mv.value /256, mv.value % 256]) }, error: mv.error?new Error(mv.error):undefined})
-        else data.set(mv.address, { error:  mv.error?new Error(mv.error):undefined })
+          data.set(mv.address, {
+            result: { data: [mv.value], buffer: Buffer.from([mv.value / 256, mv.value % 256]) },
+            error: mv.error ? new Error(mv.error) : undefined,
+          })
+        else data.set(mv.address, { error: mv.error ? new Error(mv.error) : undefined })
       })
   }
 
@@ -899,6 +928,7 @@ export class M2mSpecification implements IspecificationValidator, Ispecification
     }
     return undefined
   }
+  private static inCloseContribution: boolean = false
   private poll(error: (e: any) => void) {
     let spec = this.settings as IfileSpecification
     if (
@@ -920,20 +950,23 @@ export class M2mSpecification implements IspecificationValidator, Ispecification
           this.ghPollIntervalIndex++
           this.ghPollIntervalIndexCount = 0
         }
-        this.closeContribution()
-          .then((pullStatus) => {
-            debug('contribution closed for pull Number ' + spec.pullNumber)
-            if (contribution) {
-              contribution.monitor.next(pullStatus)
-              if (pullStatus.closed || pullStatus.merged) {
-                clearInterval(contribution.interval)
-                M2mSpecification.ghContributions.delete(spec.filename)
-                contribution.monitor.complete()
+        if (!M2mSpecification.inCloseContribution) {
+          M2mSpecification.inCloseContribution =true
+          this.closeContribution()
+            .then((pullStatus) => {
+              debug('contribution closed for pull Number ' + spec.pullNumber)
+              if (contribution) {
+                contribution.monitor.next(pullStatus)
+                if (pullStatus.closed || pullStatus.merged) {
+                  clearInterval(contribution.interval)
+                  M2mSpecification.ghContributions.delete(spec.filename)
+                  contribution.monitor.complete()
+                }
               }
-            }
-          })
-          .catch(error)
-          .finally(() => {})
+            })
+            .catch(error)
+            .finally(() => {M2mSpecification.inCloseContribution =false})
+        }
       }
       contribution.pollCount++
     }

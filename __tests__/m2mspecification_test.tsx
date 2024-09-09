@@ -175,7 +175,6 @@ describe('simple tests', () => {
     })
     expect(count).toBe(0)
   })
-
 })
 
 it.skip('closeContribution need github access', (done) => {
