@@ -5,6 +5,7 @@
    "module": "commonjs",
    "baseUrl": "./",
     "outDir": "./dist",
+    "sourceRoot": "/home/volkmar/m2m/specification/src",
     "forceConsistentCasingInFileNames": true,
     "strict": true,
     "noImplicitOverride": true,

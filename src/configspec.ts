@@ -23,7 +23,7 @@ import { IReadRegisterResultOrError, ImodbusValues, M2mSpecification } from './m
 import { Migrator } from './migrator'
 import { M2mGitHub } from './m2mgithub'
 import { Debug } from 'debug'
-const log = new Logger('config')
+const log = new Logger('specification')
 const secretsLength = 256
 const saltRounds = 8
 const defaultTokenExpiryTime = 1000 * 60 * 60 * 24 // One day
@@ -113,7 +113,7 @@ export class ConfigSpecification {
       let f: IimageAndDocumentUrl[] = parse(src)
       spec.files = f
     } else {
-      log.log(LogLevelEnum.notice, 'File not found: ' + fp)
+      //log.log(LogLevelEnum.notice, 'File not found: ' + fp)
       spec.files = []
     }
     spec.files.forEach((file) => {
@@ -127,7 +127,7 @@ export class ConfigSpecification {
   private readspecifications(directory: string): IfileSpecification[] {
     var rc: IfileSpecification[] = []
     if (!fs.existsSync(directory)) {
-      log.log(LogLevelEnum.notice, 'specifications directory not found ' + directory)
+      //log.log(LogLevelEnum.notice, 'specifications directory not found ' + directory)
       return rc
     }
     var files: string[] = fs.readdirSync(directory)
@@ -509,8 +509,8 @@ export class ConfigSpecification {
         return
       }
     }
-    if (!found && (!specfileName || specfileName != '_new'))
-      log.log(LogLevelEnum.notice, 'specification not found for deletion ' + specfileName)
+    // if (!found && (!specfileName || specfileName != '_new'))
+    //  log.log(LogLevelEnum.notice, 'specification not found for deletion ' + specfileName)
   }
 
   static getSpecificationByName(name: string): IfileSpecification | undefined {

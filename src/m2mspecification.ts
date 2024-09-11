@@ -65,11 +65,13 @@ interface Icontribution {
   monitor: Subject<IpullRequest>
   pollCount: number
   interval?: NodeJS.Timeout
+  m2mSpecification: M2mSpecification
+  nextCheck?: string
 }
-export class M2mSpecification implements IspecificationValidator, IspecificationContributor {
+export class M2mSpecification implements IspecificationValidator {
   private differentFilename = false
   private notBackwardCompatible = false
-  private ghPollInterval: number[] = [5000, 5000 * 60, 5000 * 60 * 60, 1000 * 60 * 60 * 24]
+  private ghPollInterval: number[] = [5000, 30000, 30000, 60000, 60000, 60000, 5000 * 60, 5000 * 60 * 60, 1000 * 60 * 60 * 24]
   private ghPollIntervalIndex: number = 0
   private ghPollIntervalIndexCount: number = 0
   private static ghContributions = new Map<string, Icontribution>()
@@ -318,23 +320,21 @@ export class M2mSpecification implements IspecificationValidator, Ispecification
     if (!notBackwardCompatible) return ' This will break compatibilty with previous version'
     return msg
   }
-  private handleCloseContributionError(msg: string, reject: (e: any) => void): void {
+  private static handleCloseContributionError(msg: string, reject: (e: any) => void): void {
     log.log(LogLevelEnum.error, msg)
     let e = new Error(msg)
     ;(e as any).step = 'closeContribution'
     reject(e)
   }
-  closeContribution(): Promise<IpullRequest> {
+  static closeContribution(spec: IfileSpecification): Promise<IpullRequest> {
     return new Promise<IpullRequest>((resolve, reject) => {
       if (undefined == ConfigSpecification.githubPersonalToken) {
         this.handleCloseContributionError(
-          'No Github Personal Access Token configured. Unable to close contribution ' +
-            (this.settings as IfileSpecification).filename,
+          'No Github Personal Access Token configured. Unable to close contribution ' + spec.filename,
           reject
         )
         return
       }
-      let spec = this.settings as IfileSpecification
       if (spec.pullNumber == undefined) {
         this.handleCloseContributionError('No Pull Number in specification. Unable to close contribution ' + spec.filename, reject)
         return
@@ -911,18 +911,20 @@ export class M2mSpecification implements IspecificationValidator, Ispecification
     return filename
   }
 
-  startPolling(error: (e: any) => void): Observable<IpullRequest> | undefined {
+  static startPolling(specfilename: string, error: (e: any) => void): Observable<IpullRequest> | undefined {
     debug('startPolling')
-    let spec = this.settings as IfileSpecification
-    let contribution = M2mSpecification.ghContributions.get(spec.filename)
-    if (contribution == undefined && spec.pullNumber) {
+    let spec = ConfigSpecification.getSpecificationByFilename(specfilename)
+    let contribution = M2mSpecification.ghContributions.get(specfilename)
+    if (contribution == undefined && spec && spec.pullNumber) {
       log.log(LogLevelEnum.notice, 'startPolling for pull Number ' + spec.pullNumber)
+      let mspec = new M2mSpecification(spec as Ispecification)
       let c: Icontribution = {
         pullRequest: spec.pullNumber,
         monitor: new Subject<IpullRequest>(),
         pollCount: 0,
+        m2mSpecification: mspec,
         interval: setInterval(() => {
-          this.poll(error)
+          M2mSpecification.poll(spec.filename, error)
         }, 100),
       }
       M2mSpecification.ghContributions.set(spec.filename, c)
@@ -930,9 +932,33 @@ export class M2mSpecification implements IspecificationValidator, Ispecification
     }
     return undefined
   }
+  static getNextCheck(specfilename: string): string {
+    let c = M2mSpecification.ghContributions.get(specfilename)
+    if (c && c.nextCheck) return c.nextCheck
+    return ''
+  }
+  static triggerPoll(specfilename: string): void {
+    let c = M2mSpecification.ghContributions.get(specfilename)
+    if (c && c.m2mSpecification) {
+      c.pollCount = 0
+      c.m2mSpecification.ghPollIntervalIndexCount = 0
+    }
+  }
+  static msToTime(ms: number) {
+    let seconds: number = ms / 1000
+    let minutes: number = ms / (1000 * 60)
+    let hours: number = ms / (1000 * 60 * 60)
+    let days: number = ms / (1000 * 60 * 60 * 24)
+    if (seconds < 60) return seconds.toFixed(1) + ' Sec'
+    else if (minutes < 60) return minutes.toFixed(1) + ' Min'
+    else if (hours < 24) return hours.toFixed(1) + ' Hrs'
+    else return days.toFixed(1) + ' Days'
+  }
+
   private static inCloseContribution: boolean = false
-  private poll(error: (e: any) => void) {
-    let spec = this.settings as IfileSpecification
+  private static poll(specfilename: string, error: (e: any) => void) {
+    let contribution = M2mSpecification.ghContributions.get(specfilename)
+    let spec = contribution?.m2mSpecification.settings as IfileSpecification
     if (
       ConfigSpecification.githubPersonalToken == undefined ||
       spec.status != SpecificationStatus.contributed ||
@@ -940,21 +966,32 @@ export class M2mSpecification implements IspecificationValidator, Ispecification
     )
       return
 
-    let contribution = M2mSpecification.ghContributions.get(spec.filename)
     if (contribution == undefined) {
-      this.handleCloseContributionError('Unexpected undefined contribution', error)
+      M2mSpecification.handleCloseContributionError('Unexpected undefined contribution', error)
     } else {
-      if (contribution.pollCount > this.ghPollInterval[this.ghPollIntervalIndex] / 100) contribution.pollCount = 0
+      if (
+        contribution.pollCount >
+        contribution.m2mSpecification.ghPollInterval[contribution.m2mSpecification.ghPollIntervalIndex] / 100
+      )
+        contribution.pollCount = 0
+      else {
+        let interval = contribution.m2mSpecification.ghPollInterval[contribution.m2mSpecification.ghPollIntervalIndex] / 100
+        let nextCheckTotalMs = (interval - contribution.pollCount) * 100
+        contribution.nextCheck = M2mSpecification.msToTime(nextCheckTotalMs)
+      }
       if (contribution.pollCount == 0) {
         // Set ghPollIntervalIndex (Intervall duration)
         // 10 * every 5 second, 10 * every 5 minutes, 10 * every 5 hours, then once a day
-        if (this.ghPollIntervalIndexCount++ >= 10 && this.ghPollIntervalIndex < this.ghPollInterval.length - 1) {
-          this.ghPollIntervalIndex++
-          this.ghPollIntervalIndexCount = 0
+        if (
+          contribution.m2mSpecification.ghPollIntervalIndexCount++ >= 10 &&
+          contribution.m2mSpecification.ghPollIntervalIndex < contribution.m2mSpecification.ghPollInterval.length - 1
+        ) {
+          contribution.m2mSpecification.ghPollIntervalIndex++
+          contribution.m2mSpecification.ghPollIntervalIndexCount = 0
         }
         if (!M2mSpecification.inCloseContribution) {
           M2mSpecification.inCloseContribution = true
-          this.closeContribution()
+          M2mSpecification.closeContribution(spec)
             .then((pullStatus) => {
               debug('contribution closed for pull Number ' + spec.pullNumber)
               if (contribution) {

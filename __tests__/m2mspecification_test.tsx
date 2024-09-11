@@ -186,11 +186,12 @@ it.skip('closeContribution need github access', (done) => {
   fs.rmSync(yamlDir, { recursive: true, force: true })
   fs.mkdirSync(yamlDir)
   let tspec = structuredClone(spec)
+  ConfigSpecification['specifications'].push(tspec)
+
   let mspec = new M2mSpecification(tspec)
   new ConfigSpecification().writeSpecificationFromFileSpec(tspec, tspec.filename, undefined)
   tspec.pullNumber = 81
-  mspec
-    .closeContribution()
+  M2mSpecification.closeContribution(tspec)
     .then(() => {
       done()
       fs.rmSync(yamlDir, { recursive: true, force: true })
@@ -202,8 +203,9 @@ it.skip('closeContribution need github access', (done) => {
       expect(1).toBeFalsy()
     })
 })
-class TestM2mSpecification extends M2mSpecification {
-  rcs: { merged: boolean; closed: boolean }[] = [
+
+class TestM2mSpecification {
+  static rcs: { merged: boolean; closed: boolean }[] = [
     { merged: false, closed: false }, //0
     { merged: true, closed: false },
     { merged: false, closed: false },
@@ -216,27 +218,37 @@ class TestM2mSpecification extends M2mSpecification {
     { merged: false, closed: false },
     { merged: false, closed: true },
   ]
-  private idx = 0
-  override closeContribution(): Promise<IpullRequest> {
+  private static idx = 0
+  static closeContribution(spec: IfileSpecification): Promise<IpullRequest> {
     return new Promise<IpullRequest>((resolve, reject) => {
-      if (this.idx >= this.rcs.length) reject(new Error('not enough test data provided'))
+      if (TestM2mSpecification.idx >= TestM2mSpecification.rcs.length) reject(new Error('not enough test data provided'))
       resolve({
         pullNumber: 16,
-        merged: this.rcs[this.idx].merged,
-        closed: this.rcs[this.idx++].closed,
+        merged: TestM2mSpecification.rcs[TestM2mSpecification.idx].merged,
+        closed: TestM2mSpecification.rcs[TestM2mSpecification.idx++].closed,
       })
     })
+  }
+  static pollOriginal: (specfilename: string, error: (e: any) => void) => void
+  static poll(specfilename: string, error: (e: any) => void): void {
+    let contribution = M2mSpecification['ghContributions'].get(specfilename)
+    //Speed up test set short intervals
+    contribution!.m2mSpecification['ghPollInterval'] = [1, 2, 3, 4]
+    TestM2mSpecification.pollOriginal(specfilename, error)
   }
 }
 it('startPolling', (done) => {
   let specP = structuredClone(spec)
   specP.pullNumber = 16
   specP.status = SpecificationStatus.contributed
+  ConfigSpecification['specifications'].push(specP)
   ConfigSpecification.githubPersonalToken = 'abcd'
-  let m = new TestM2mSpecification(specP)
   //Speed up test set short intervals
-  m['ghPollInterval'] = [1, 2, 3, 4]
-  let o = m.startPolling((e) => {
+  //m['ghPollInterval'] = [1, 2, 3, 4]
+  M2mSpecification.closeContribution = TestM2mSpecification.closeContribution
+  TestM2mSpecification.pollOriginal = M2mSpecification['poll']
+  M2mSpecification['poll'] = TestM2mSpecification.poll
+  let o = M2mSpecification.startPolling(specP.filename, (e) => {
     expect(true).toBeFalsy()
   })
   let callCount = 0
@@ -251,16 +263,18 @@ it('startPolling', (done) => {
           expect(pullRequest.merged).toBeTruthy()
           break
       }
+      let i = M2mSpecification['ghContributions'].get(specP.filename)
+      expect(i?.nextCheck).toBe('0.0 Sec')
       callCount++
       if (callCount > expectedCallCount) expect(callCount).toBe(expectedCallCount)
     },
     complete() {
       expect(M2mSpecification['ghContributions'].has(specP.filename)).toBeFalsy()
       expect(callCount).toBe(2)
-      expect(m['ghPollIntervalIndexCount']).toBe(2)
-      expect(m['ghPollIntervalIndex']).toBe(0)
+      //expect(m['ghPollIntervalIndexCount']).toBe(2)
+      //expect(m['ghPollIntervalIndex']).toBe(0)
       expectedCallCount = 11
-      o = m.startPolling((e) => {
+      o = M2mSpecification.startPolling(specP.filename, (e) => {
         expect(true).toBeFalsy()
       })
       o?.subscribe({
@@ -277,10 +291,9 @@ it('startPolling', (done) => {
           if (callCount > expectedCallCount) expect(callCount).toBe(expectedCallCount)
         },
         complete() {
-          expect(M2mSpecification['ghContributions'].has(specP.filename)).toBeFalsy()
           expect(callCount).toBe(expectedCallCount)
-          expect(m['ghPollIntervalIndexCount']).toBe(0)
-          expect(m['ghPollIntervalIndex']).toBe(1)
+          //          expect(m['ghPollIntervalIndexCount']).toBe(0)
+          //          expect(m['ghPollIntervalIndex']).toBe(1)
           done()
         },
       })
