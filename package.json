@@ -27,7 +27,7 @@
     "validate": "bin/validate.js"
   },
   "dependencies": {
-    "@modbus2mqtt/specification.shared": "^0.10.0",
+    "@modbus2mqtt/specification.shared": "^0.10.1",
     "@octokit/rest": "^21.0.2",
     "@types/npmlog": "^7.0.0",
     "commander": "^12.1.0",
