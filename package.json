@@ -28,7 +28,7 @@
   },
   "dependencies": {
     "@modbus2mqtt/specification.shared": "^0.10.1",
-    "@octokit/rest": "^21.0.2",
+    "@octokit/rest": "^20.1.1",
     "@types/npmlog": "^7.0.0",
     "commander": "^12.1.0",
     "debug": "^4.3.7",

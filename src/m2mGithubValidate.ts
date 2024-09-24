@@ -12,7 +12,6 @@ export interface IpullRequest {
   pullNumber: number
 }
 export class M2mGithubValidate {
-  private localDir: string
   private octokit: Octokit | null
   constructor(personalAccessToken: string | null) {
     this.octokit = null
@@ -20,33 +19,6 @@ export class M2mGithubValidate {
       this.octokit = new Octokit({
         auth: personalAccessToken,
       })
-  }
-  private downloadFile(sha: string, filename: string): Promise<void> {
-    return new Promise<void>((resolve, reject) => {
-      this.octokit!.git.getBlob({
-        owner: githubPublicNames.publicModbus2mqttOwner,
-        repo: githubPublicNames.modbus2mqttRepo,
-        file_sha: sha,
-      })
-        .then((blob) => {
-          try {
-            let buffer = Buffer.from(blob.data.content, blob.data.encoding as BufferEncoding)
-            let options: fs.ObjectEncodingOptions = { encoding: blob.data.encoding as BufferEncoding }
-            let fullFilename = join(this.localDir, filename)
-            let dir = path.dirname(fullFilename)
-            fs.mkdirSync(dir, { recursive: true })
-            fs.writeFileSync(join(this.localDir, filename), buffer, options)
-            resolve()
-          } catch (e: any) {
-            e.step = 'writeFile'
-            reject(e)
-          }
-        })
-        .catch((e) => {
-          e.step = 'getBlob'
-          reject(e)
-        })
-    })
   }
 
   listPullRequestFiles(owner: string, pull_number: number): Promise<{ pr_number: number; files: string[] }> {
