@@ -1,6 +1,6 @@
 {
   "name": "@modbus2mqtt/specification",
-  "version": "0.15.15",                          
+  "version": "0.15.15",
   "description": "File access, github access and validation for specifications",
   "keywords": [
     "modbus2mqtt",
@@ -22,14 +22,13 @@
     "build.modbusserver": "mkdir -p distsrv && tsc --project tsconfig.modbusserver.json && sed '/\"scripts\"/,/}[,]$/ d; /^$/d' package.json >package.dist ",
     "build": "tsc && echo '{\"type\": \"commonjs\"}' > dist/package.json",
     "prettier": "prettier --write '**/*.{ts,js,css,html,tsx}'"
-
   },
   "bin": {
     "validate": "bin/validate.js"
   },
   "dependencies": {
     "@modbus2mqtt/specification.shared": "^0.10.0",
-    "@octokit/rest": "^20.1.1",
+    "@octokit/rest": "^21.0.2",
     "@types/npmlog": "^7.0.0",
     "commander": "^12.1.0",
     "debug": "^4.3.7",
@@ -47,7 +46,7 @@
     "@opengovsg/credits-generator": "^1.0.7",
     "@types/debug": "^4.1.12",
     "@types/jest": "^29.5.12",
-    "@types/node": "^20.14.2",
+    "@types/node": "^22.5.5",
     "@typescript-eslint/eslint-plugin": "^8.0.0",
     "@typescript-eslint/parser": "^8.0.0",
     "async-mutex": "^0.5.0",
