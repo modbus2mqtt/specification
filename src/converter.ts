@@ -20,6 +20,10 @@ export abstract class Converter {
   getOptionalParameters(): string[] {
     return ['value_sensor', 'discovertemplate']
   }
+  publishModbusValues(): boolean {
+    return false
+  }
+
   abstract getModbusRegisterTypes(): ModbusRegisterType[]
   getParameterType(_entity: Ientity): string | undefined {
     return undefined

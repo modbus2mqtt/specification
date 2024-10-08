@@ -2,10 +2,9 @@
 {
   "compileOnSave": false,
   "compilerOptions": {
-   "module": "commonjs",
-   "baseUrl": "./",
+    "baseUrl": "./",
+    "module": "commonjs",
     "outDir": "./dist",
-    "sourceRoot": "/home/volkmar/m2m/specification/src",
     "forceConsistentCasingInFileNames": true,
     "strict": true,
     "noImplicitOverride": true,
@@ -28,6 +27,7 @@
       "dom"
     ]
   },
+  "include": ["./src/*"],
   "exclude":[
     "node_modules/**/*",
     "dist/**/*",

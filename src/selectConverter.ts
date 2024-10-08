@@ -37,7 +37,9 @@ export class SelectConverter extends Converter {
     }
     throw new Error('No options available for entity id: ' + entityid)
   }
-
+  override publishModbusValues(): boolean {
+    return true
+  }
   override modbus2mqtt(spec: Ispecification, entityid: number, value: ReadRegisterResult): number | string {
     let entity = spec.entities.find((e) => e.id == entityid)
     var msg = ''
