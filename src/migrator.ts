@@ -1,10 +1,9 @@
-import { file } from 'jszip'
 import { IModbusData, Idata, IfileSpecification } from './ifilespecification'
 import { ModbusRegisterType, SPECIFICATION_VERSION } from '@modbus2mqtt/specification.shared'
 import { LogLevelEnum, Logger } from './log'
 let log = new Logger('migrator')
 
-enum ModbusFunctionCodes0_1 {
+enum ModbusFunctionCodes {
   readHoldingRegisters = 3,
   readCoils = 1,
   readAnalogInputs = 4,
@@ -16,7 +15,7 @@ enum ModbusFunctionCodes0_1 {
   writeHoldingRegisters = 16,
   IllegalFunctionCode = 0,
 }
-var FCOffset0_1: number = 100000
+var FCOffset: number = 100000
 export class Migrator {
   constructor() {}
   migrate(filecontent: any): IfileSpecification {
@@ -45,58 +44,52 @@ export class Migrator {
   }
   private fc2registerType(functioncode: number): { registerType: ModbusRegisterType; readonly: boolean } | undefined {
     switch (functioncode) {
-      case ModbusFunctionCodes0_1.readHoldingRegisters:
+      case ModbusFunctionCodes.readHoldingRegisters:
         return {
           registerType: ModbusRegisterType.HoldingRegister,
           readonly: true,
         }
-      case ModbusFunctionCodes0_1.readCoils:
+      case ModbusFunctionCodes.readCoils:
         return {
           registerType: ModbusRegisterType.Coils,
           readonly: true,
         }
-      case ModbusFunctionCodes0_1.readAnalogInputs:
+      case ModbusFunctionCodes.readAnalogInputs:
         return {
           registerType: ModbusRegisterType.AnalogInputs,
           readonly: true,
         }
-      case ModbusFunctionCodes0_1.writeCoils:
+      case ModbusFunctionCodes.writeCoils:
         return {
           registerType: ModbusRegisterType.Coils,
           readonly: false,
         }
-        break
-      case ModbusFunctionCodes0_1.writeAnalogOutput:
+      case ModbusFunctionCodes.writeAnalogOutput:
         return {
           registerType: ModbusRegisterType.AnalogInputs,
           readonly: false,
         }
-        break
-      case ModbusFunctionCodes0_1.readWriteHoldingRegisters:
+      case ModbusFunctionCodes.readWriteHoldingRegisters:
         return {
           registerType: ModbusRegisterType.HoldingRegister,
           readonly: false,
         }
-        break
-      case ModbusFunctionCodes0_1.readAnalogs:
+      case ModbusFunctionCodes.readAnalogs:
         return {
           registerType: ModbusRegisterType.AnalogInputs,
           readonly: true,
         }
-        break
-      case ModbusFunctionCodes0_1.readWriteCoils:
+      case ModbusFunctionCodes.readWriteCoils:
         return {
           registerType: ModbusRegisterType.Coils,
           readonly: false,
         }
-        break
-      case ModbusFunctionCodes0_1.writeHoldingRegisters:
+      case ModbusFunctionCodes.writeHoldingRegisters:
         return {
           registerType: ModbusRegisterType.HoldingRegister,
           readonly: false,
         }
-        break
-      case ModbusFunctionCodes0_1.IllegalFunctionCode:
+      case ModbusFunctionCodes.IllegalFunctionCode:
         log.log(LogLevelEnum.error, 'Function Code' + functioncode + ' is unknown')
     }
     return undefined
@@ -124,8 +117,8 @@ export class Migrator {
     }
     if (filecontent.testdata) {
       filecontent.testdata.forEach((data: any) => {
-        let fc = Math.floor(data.address / FCOffset0_1)
-        let address = data.address % FCOffset0_1
+        let fc = Math.floor(data.address / FCOffset)
+        let address = data.address % FCOffset
         let value = data.value
         let rt = this.fc2registerType(fc)
         if (rt)

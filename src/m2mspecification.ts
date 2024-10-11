@@ -1,6 +1,5 @@
 import { IspecificationValidator, IvalidateIdentificationResult } from './ispecificationvalidator'
 import { IspecificationContributor } from './ispecificationContributor'
-let JSZip = require('jszip')
 let path = require('path')
 import { join } from 'path'
 import * as fs from 'fs'
@@ -382,19 +381,6 @@ export class M2mSpecification implements IspecificationValidator {
     return files
   }
 
-  writeFiles2Stream(root: string, res: NodeJS.WritableStream): void {
-    let zip = new JSZip()
-    let files = this.getSpecificationsFilesList()
-    files.forEach((file) => {
-      zip.file(file, fs.readFileSync(join(root, file)))
-    })
-    zip
-      .generateNodeStream({ type: 'nodebuffer', streamFiles: true })
-      .pipe(res)
-      .on('finish', function () {
-        log.log(LogLevelEnum.notice, 'out.zip written.')
-      })
-  }
 
   validate(language: string): Imessage[] {
     let rc = this.validateSpecification(language, true)
