@@ -381,7 +381,6 @@ export class M2mSpecification implements IspecificationValidator {
     return files
   }
 
-
   validate(language: string): Imessage[] {
     let rc = this.validateSpecification(language, true)
     if ((this.settings as ImodbusSpecification).entities.length > 0) {

@@ -104,7 +104,7 @@ export class ConfigSpecification {
     return this.appendSpecificationUrl(specfilename, iurl)
   }
 
-  private static specifications: IfileSpecification[]
+  private static specifications: IfileSpecification[] = []
 
   static yamlDir: string = ''
 
@@ -565,7 +565,7 @@ export class ConfigSpecification {
     return 's' + slaveid
   }
 
-  static createZipFromSpecification(specfilename: string, r: stream.Writable):void {
+  static createZipFromSpecification(specfilename: string, r: stream.Writable): void {
     let spec = { filename: specfilename } as any as IbaseSpecification
     let specFilePath = ConfigSpecification.getSpecificationPath(spec)
     let fn = ConfigSpecification.getLocalFilesPath(specfilename)
@@ -577,24 +577,21 @@ export class ConfigSpecification {
       fn = ConfigSpecification.getPublicFilesPath(specfilename)
       specFilePath = ConfigSpecification.getPublicSpecificationPath(spec)
     }
-    if (!fs.existsSync(fn))
-      throw new Error('no specificationPath found at ' + fn)
-      
-    if (!fs.existsSync(specFilePath))
-      throw new Error('no specification found at ' + specFilePath)
-      
-     let z = new AdmZip()
-      z.addLocalFile(specFilePath);
-      z.addLocalFolder(fn, "files/" + specfilename )
- 
-      r.write(z.toBuffer(),()=>{ 
-        r.end() 
-      })
-    
+    if (!fs.existsSync(fn)) throw new Error('no specificationPath found at ' + fn)
+
+    if (!fs.existsSync(specFilePath)) throw new Error('no specification found at ' + specFilePath)
+
+    let z = new AdmZip()
+    z.addLocalFile(specFilePath)
+    z.addLocalFolder(fn, 'files/' + specfilename)
+
+    r.write(z.toBuffer(), () => {
+      r.end()
+    })
   }
 
   private static validateSpecificationZip(localSpecDir: string, zip: AdmZip.IZipEntry[]): IimportMessages {
-    let errors:IimportMessages ={ warnings:"", errors:""}
+    let errors: IimportMessages = { warnings: '', errors: '' }
     let filesExists = false
     let specExists = false
     for (var entry of zip) {
@@ -602,7 +599,8 @@ export class ConfigSpecification {
         if (entry.entryName.indexOf('/files.yaml') > 0) filesExists = true
         else specExists = true
 
-      if (fs.existsSync(join(localSpecDir, entry.entryName))) errors.warnings = errors.warnings + 'File cannot be overwritten: ' + entry.entryName + "\n"
+      if (fs.existsSync(join(localSpecDir, entry.entryName)))
+        errors.warnings = errors.warnings + 'File cannot be overwritten: ' + entry.entryName + '\n'
     }
 
     if (!filesExists) errors.errors = errors.errors + 'No files.yaml found\n'
@@ -610,19 +608,26 @@ export class ConfigSpecification {
     return errors
   }
 
-  static importSpecificationZip(zipfilename: string):IimportMessages {
-      let localSpecDir = join(ConfigSpecification.getLocalDir(), 'specifications')
-
+  static importSpecificationZip(zipfilename: string): IimportMessages {
+    let localSpecDir = join(ConfigSpecification.getLocalDir(), 'specifications')
+    try {
       let z = new AdmZip(zipfilename)
       let errors = this.validateSpecificationZip(localSpecDir, z.getEntries())
       if (errors.errors.length == 0) {
-        z.extractAllTo(localSpecDir )
+        z.extractAllTo(localSpecDir)
         new ConfigSpecification().readYaml()
+        return errors
       }
-      fs.unlinkSync(zipfilename)
-      return errors
+    } catch (e: any) {
+      return { errors: e.message, warnings: '' }
+    } finally {
+      fs.rmdirSync(path.dirname(zipfilename), {recursive:true})
+    }
+    // Just to make compiler happy
+    return { errors: '', warnings: '' }
   }
 }
+
 export function getSpecificationImageOrDocumentUrl(rootUrl: string | undefined, specName: string, url: string): string {
   let fn = getBaseFilename(url)
   let rc: string = ''
