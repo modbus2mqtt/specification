@@ -620,9 +620,7 @@ export class ConfigSpecification {
       }
     } catch (e: any) {
       return { errors: e.message, warnings: '' }
-    } finally {
-      fs.rmdirSync(path.dirname(zipfilename), {recursive:true})
-    }
+    } 
     // Just to make compiler happy
     return { errors: '', warnings: '' }
   }

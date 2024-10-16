@@ -1,7 +1,7 @@
 import { it, expect, jest, xit } from '@jest/globals'
 import { ConfigSpecification } from '../src/configspec'
 import * as fs from 'fs'
-import { join } from 'path'
+import path, { join } from 'path'
 import { singleMutex, yamlDir } from './configsbase'
 import {
   IbaseSpecification,
@@ -25,12 +25,25 @@ let testdata: ImodbusValues = {
 }
 
 it('check device type status', () => {
+  let localSpecdir = join(yamlDir, 'local/specifications')
+  let publicSpecdir = join(yamlDir, 'public/specifications')
+  fs.mkdirSync(publicSpecdir, {recursive:true})
+  let pwtl1 = join(publicSpecdir, 'waterleveltransmitter.yaml')
+  fs.copyFileSync(join(localSpecdir, 'waterleveltransmitter.yaml'), pwtl1)
+  let pdy = join(publicSpecdir, 'deyeinverter.yaml')
+  fs.copyFileSync(join(localSpecdir, 'waterleveltransmitter.yaml'), pdy)
+  let filesDir = join(localSpecdir, 'files/waterleveltransmitter1')
+ 
+  fs.copyFileSync(join(localSpecdir, 'waterleveltransmitter.yaml'), join(localSpecdir, 'waterleveltransmitter1.yaml'))
+  
   const configSpec = new ConfigSpecification()
   configSpec.readYaml()
   ConfigSpecification.setMqttdiscoverylanguage('en')
   expect(ConfigSpecification.getSpecificationByFilename('waterleveltransmitter')!.status).toBe(SpecificationStatus.cloned)
   expect(ConfigSpecification.getSpecificationByFilename('deyeinverter')!.status).toBe(SpecificationStatus.published)
   expect(ConfigSpecification.getSpecificationByFilename('newDevice')!.status).toBe(SpecificationStatus.added)
+  fs.rmSync(pwtl1)
+  fs.rmSync(pdy)
 })
 it('write/Migrate', () => {
   fs.copyFileSync(
@@ -127,7 +140,8 @@ it('contribution', () => {
     fs.copyFileSync(join(localSpecdir, 'waterleveltransmitter.yaml'), join(localSpecdir, 'waterleveltransmitter1.yaml'))
     let filesDir = join(localSpecdir, 'files/waterleveltransmitter1')
     let publicSpecdir = join(yamlDir, 'public/specifications')
-
+    fs.mkdirSync(publicSpecdir,{recursive:true})
+   
     cleanWaterLevelTransmitter1(publicSpecdir)
     cleanWaterLevelTransmitter1(contributedSpecdir)
     if (!fs.existsSync(filesDir)) fs.mkdirSync(filesDir)
@@ -189,8 +203,9 @@ it('contribution cloned', () => {
     cleanWaterLevelTransmitter1(contributedSpecdir)
     let filesDir = join(localSpecdir, 'files/waterleveltransmitter1')
     let publicfilesDir = join(publicSpecdir, 'files/waterleveltransmitter1')
-    if (!fs.existsSync(filesDir)) fs.mkdirSync(filesDir)
-    if (!fs.existsSync(publicfilesDir)) fs.mkdirSync(publicfilesDir)
+    
+    if (!fs.existsSync(filesDir)) fs.mkdirSync(filesDir,{recursive:true})
+    if (!fs.existsSync(publicfilesDir)) fs.mkdirSync(publicfilesDir,{recursive:true})
     fs.copyFileSync(
       join(localSpecdir, 'files/waterleveltransmitter/files.yaml'),
       join(localSpecdir, 'files/waterleveltransmitter1/files.yaml')
@@ -238,61 +253,62 @@ it('contribution cloned', () => {
   })
 })
 
-xit('importSpecificationZip existing Specification', () => {
-  return new Promise<void>((resolve, reject) => {
-    let zipFile = 'spec.zip'
+xit( 'importSpecificationZip existing Specification', ()=>{
+  return new Promise<void>((resolve,reject)=>{
+    let zipFile = "spec.zip"
     let cs = new ConfigSpecification()
     let s = fs.createWriteStream(zipFile)
-    ConfigSpecification.createZipFromSpecification('waterleveltransmitter', s)
+    ConfigSpecification.createZipFromSpecification('waterleveltransmitter',s)
     let errors = ConfigSpecification.importSpecificationZip(zipFile)
-    expect(errors.errors).not.toBe('')
+    expect( errors.errors ).not.toBe("")
     resolve()
+    })
   })
-})
 
-function removeLocal(specPath: string, specFilesPath: string) {
-  fs.rmSync(specFilesPath, { recursive: true, force: true })
-  try {
-    fs.rmSync(specPath, { recursive: true, force: true })
-  } catch (e: any) {
-    if (e.code != 'ENOENT') console.log('error ' + e.message)
+function removeLocal(specPath:string, specFilesPath:string ){
+  fs.rmSync(specFilesPath,{ recursive:true,force:true })
+  try{
+    fs.rmSync(specPath,{ recursive:true,force:true })
+  }catch(e:any){
+    if( e.code != 'ENOENT')
+      console.log("error " + e.message)
   }
 }
-it('importSpecificationZip ', () => {
-  return new Promise<void>((resolve, reject) => {
+it( 'importSpecificationZip ', ()=>{
+  return new Promise<void>((resolve,reject)=>{
+  
     let filename = 'eastronsdm720-m'
-    let zipFile = join(ConfigSpecification.yamlDir, filename + 'copy.zip')
-    let specPath = ConfigSpecification['getSpecificationPath']({ filename: filename } as IbaseSpecification)
-    let specFilesPath = ConfigSpecification['getLocalFilesPath'](filename)
+    let zipFile = join( ConfigSpecification.yamlDir, filename + ".zip" )
+    let specPath =ConfigSpecification['getSpecificationPath']({ filename: filename} as IbaseSpecification )
+    let specFilesPath =ConfigSpecification['getLocalFilesPath'](filename )
 
-    fs.copyFileSync(join(ConfigSpecification.yamlDir, filename + '.zip'), zipFile)
     removeLocal(specPath, specFilesPath)
-
+  
     let cs = new ConfigSpecification()
     // Create the specification locally to be able to create the zip file in the next step
     let errors = ConfigSpecification.importSpecificationZip(zipFile)
 
     let s = fs.createWriteStream(zipFile)
-    s.on('end', () => {
-      console.log('Write finished')
+    s.on('end',()=>{
+        console.log("Write finished")
+       })
+    s.on('error',()=>{
+        console.log("Write finished")
+       })
+    s.on('finish', () => { 
+        s.end() 
+        // Remove specification to be able to import it w/o error
+        removeLocal(specPath, specFilesPath)
+ 
+        ConfigSpecification.importSpecificationZip(zipFile)
+        expect( fs.existsSync( specPath)).toBeTruthy()
+        expect( fs.existsSync( specFilesPath)).toBeTruthy()
+        removeLocal(specPath, specFilesPath)
+        resolve()
     })
-    s.on('error', () => {
-      console.log('Write finished')
-    })
-    s.on('finish', () => {
-      s.end()
-      // Remove specification to be able to import it w/o error
-      removeLocal(specPath, specFilesPath)
-
-      ConfigSpecification.importSpecificationZip(zipFile)
-      expect(fs.existsSync(zipFile)).toBeFalsy()
-      expect(fs.existsSync(specPath)).toBeTruthy()
-      expect(fs.existsSync(specFilesPath)).toBeTruthy()
-      removeLocal(specPath, specFilesPath)
-      resolve()
-    })
-
-    ConfigSpecification.createZipFromSpecification(filename, s)
+    
+    ConfigSpecification.createZipFromSpecification(filename,s)
     // s.on( finish will be called after createZipFromSpecification
   })
+
 })
