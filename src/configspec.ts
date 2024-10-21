@@ -639,7 +639,7 @@ export function getSpecificationImageOrDocumentUrl(rootUrl: string | undefined, 
     let append = '/'
     if (rootUrl.endsWith('/')) append = ''
     rc = rootUrl + append + join(filesUrlPrefix, specName, fn)
-  } else rc = '/' + join(filesUrlPrefix, specName, fn)
+  } else rc = join(filesUrlPrefix, specName, fn)
 
   return rc
 }
