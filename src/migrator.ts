@@ -1,8 +1,12 @@
 import { IModbusData, Idata, IfileSpecification } from './ifilespecification'
-import { ModbusRegisterType, SPECIFICATION_VERSION } from '@modbus2mqtt/specification.shared'
+import { FileLocation, IimageAndDocumentUrl, ModbusRegisterType, SPECIFICATION_VERSION } from '@modbus2mqtt/specification.shared'
 import { LogLevelEnum, Logger } from './log'
 let log = new Logger('migrator')
 
+export interface IimageAndDocumentFilesType {
+  version:string,
+  files:IimageAndDocumentUrl[]
+}
 enum ModbusFunctionCodes {
   readHoldingRegisters = 3,
   readCoils = 1,
@@ -15,6 +19,8 @@ enum ModbusFunctionCodes {
   writeHoldingRegisters = 16,
   IllegalFunctionCode = 0,
 }
+
+
 var FCOffset: number = 100000
 export class Migrator {
   constructor() {}
@@ -184,4 +190,15 @@ export class Migrator {
     log.log(LogLevelEnum.error, 'Unable to convert converter to registerType ' + converter)
     return converter
   }
+  migrateFiles(fileContent:any):IimageAndDocumentFilesType{
+    if( fileContent.length )
+    {
+      fileContent.forEach( (fc:IimageAndDocumentUrl)=>{
+        if(fc.fileLocation == FileLocation.Local && fc.url.startsWith("/"))
+          fc.url = fc.url.substring(1) // Remove trailing  '/'
+      })
+    }
+    return fileContent
+  }
+
 }

@@ -13,6 +13,7 @@ import {
   Inumber,
   ModbusRegisterType,
   SPECIFICATION_VERSION,
+  SPECIFICATION_FILES_VERSION,
   SpecificationFileUsage,
   SpecificationStatus,
   getSpecificationI18nName,
@@ -21,7 +22,7 @@ import { getBaseFilename } from '@modbus2mqtt/specification.shared'
 import { IfileSpecification } from './ifilespecification'
 import { ConverterMap } from './convertermap'
 import { M2mSpecification } from './m2mspecification'
-import { Migrator } from './migrator'
+import { IimageAndDocumentFilesType, Migrator } from './migrator'
 import stream from 'stream'
 import Debug from 'debug'
 
@@ -32,7 +33,6 @@ export const filesUrlPrefix = 'specifications/files'
 const debug = Debug('configSpec')
 //const baseTopic = 'modbus2mqtt';
 //const baseTopicHomeAssistant = 'homeassistant';
-
 export class ConfigSpecification {
   static setMqttdiscoverylanguage(lang: string, ghToken?: string) {
     ConfigSpecification.mqttdiscoverylanguage = lang
@@ -69,12 +69,13 @@ export class ConfigSpecification {
     let filesPath = ConfigSpecification.getLocalFilesPath(specfilename)
     if (filesPath && !fs.existsSync(filesPath)) fs.mkdirSync(filesPath, { recursive: true })
 
-    let files: IimageAndDocumentUrl[] = []
+    let files: IimageAndDocumentFilesType = { version: SPECIFICATION_FILES_VERSION, files:[]}
     let filesName = join(filesPath, 'files.yaml')
     if (fs.existsSync(filesPath)) {
       try {
         let content = fs.readFileSync(filesName, { encoding: 'utf8' })
         files = parse(content.toString())
+        files = new Migrator().migrateFiles(files)
       } catch (e: any) {
         log.log(LogLevelEnum.error, 'Unable to read Files directory for ' + filesName + '\n' + JSON.stringify(e))
       }
@@ -82,16 +83,16 @@ export class ConfigSpecification {
       // 'Path does not exist '
     }
 
-    if (files.find((uf) => uf.url == url.url && uf.usage == url.usage) == null) {
-      files.push(url)
+    if (files.files.find((uf) => uf.url == url.url && uf.usage == url.usage) == null) {
+      files.files.push(url)
       fs.writeFileSync(filesName, stringify(files), {
         encoding: 'utf8',
         flag: 'w',
       })
       let spec = ConfigSpecification.specifications.find((spec) => spec.filename == specfilename)
-      if (spec) spec.files = files
+      if (spec) spec.files = files.files
     }
-    return files ? files : undefined
+    return files && files.files ? files.files : undefined
   }
   appendSpecificationFile(
     specfilename: string,
@@ -113,8 +114,10 @@ export class ConfigSpecification {
 
     if (fs.existsSync(fp)) {
       let src = fs.readFileSync(fp, { encoding: 'utf8' })
-      let f: IimageAndDocumentUrl[] = parse(src)
-      spec.files = f
+      let f: IimageAndDocumentFilesType = parse(src)
+      f = new Migrator().migrateFiles(f)
+
+      spec.files = f.files
     } else {
       //log.log(LogLevelEnum.notice, 'File not found: ' + fp)
       spec.files = []
@@ -297,37 +300,40 @@ export class ConfigSpecification {
     let decodedUrl = decodeURIComponent(url).replaceAll('+', ' ')
     let deleteFlag: boolean = true
     let yamlFile = getSpecificationImageOrDocumentUrl(join(ConfigSpecification.yamlDir, 'local'), specfilename, 'files.yaml')
-    let files: IimageAndDocumentUrl[] = []
+    let files: IimageAndDocumentFilesType = {version:SPECIFICATION_FILES_VERSION, files:[] }
     if (fs.existsSync(yamlFile)) {
       try {
         let content = fs.readFileSync(yamlFile, { encoding: 'utf8' })
         files = parse(content.toString())
-        let imgFileIdx: number = files.findIndex(
+        files = new Migrator().migrateFiles(files)
+        let imgFileIdx: number = files.files.findIndex(
           (f) => decodeURIComponent(f.url).replaceAll('+', ' ') == decodedUrl && f.usage == SpecificationFileUsage.img
         )
-        let docFileIdx: number = files.findIndex(
+        let docFileIdx: number = files.files.findIndex(
           (f) => decodeURIComponent(f.url).replaceAll('+', ' ') == decodedUrl && f.usage == SpecificationFileUsage.documentation
         )
         if (imgFileIdx >= 0 && docFileIdx >= 0) deleteFlag = false
         let idx = usage == SpecificationFileUsage.img ? imgFileIdx : docFileIdx
         if (idx >= 0) {
-          files.splice(idx, 1)
+          files.files.splice(idx, 1)
 
           fs.writeFileSync(yamlFile, stringify(files), {
             encoding: 'utf8',
             flag: 'w',
           })
           let spec = ConfigSpecification.specifications.find((spec) => spec.filename == specfilename)
-          if (spec) spec.files = files
+          if (spec) spec.files = files.files
         }
       } catch (e: any) {
         log.log(LogLevelEnum.error, 'Unable to read Files directory for ' + specfilename)
       }
     }
     specfilename = getSpecificationImageOrDocumentUrl(join(ConfigSpecification.yamlDir, 'local'), specfilename, fname)
-    if (fs.existsSync(specfilename) && deleteFlag) fs.unlinkSync(specfilename)
-    return files
+    if (fs.existsSync(specfilename) && deleteFlag) 
+      fs.unlinkSync(specfilename)
+    return files.files
   }
+  
   private renameFilesPath(spec: IfileSpecification, oldfilename: string, newDirectory: string) {
     let oldDirectory = 'local'
     if (spec.status == SpecificationStatus.contributed) oldDirectory = 'contributed'
