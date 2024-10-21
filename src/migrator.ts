@@ -1,5 +1,5 @@
 import { IModbusData, Idata, IfileSpecification } from './ifilespecification'
-import { FileLocation, IimageAndDocumentUrl, ModbusRegisterType, SPECIFICATION_VERSION } from '@modbus2mqtt/specification.shared'
+import { FileLocation, IimageAndDocumentUrl, ModbusRegisterType, SPECIFICATION_FILES_VERSION, SPECIFICATION_VERSION } from '@modbus2mqtt/specification.shared'
 import { LogLevelEnum, Logger } from './log'
 let log = new Logger('migrator')
 
@@ -197,6 +197,7 @@ export class Migrator {
         if(fc.fileLocation == FileLocation.Local && fc.url.startsWith("/"))
           fc.url = fc.url.substring(1) // Remove trailing  '/'
       })
+      return { version:SPECIFICATION_FILES_VERSION, files: fileContent} 
     }
     return fileContent
   }
