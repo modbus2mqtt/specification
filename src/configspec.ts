@@ -175,6 +175,7 @@ export class ConfigSpecification {
 
   // set the base file for relative includes
   readYaml(): void {
+    debugger;
     try {
       var publishedSpecifications: IfileSpecification[] = this.readspecifications(
         ConfigSpecification.yamlDir + '/public/specifications'
