@@ -1,6 +1,6 @@
 {
   "name": "@modbus2mqtt/specification",
-  "version": "0.15.17",
+  "version": "0.15.18",
   "description": "File access, github access and validation for specifications",
   "keywords": [
     "modbus2mqtt",
@@ -27,7 +27,7 @@
     "validate": "bin/validate.js"
   },
   "dependencies": {
-    "@modbus2mqtt/specification.shared": "^0.10.4",
+    "@modbus2mqtt/specification.shared": "^0.10.5",
     "@octokit/rest": "^20.1.1",
     "adm-zip": "^0.5.16",
     "commander": "^12.1.0",
@@ -43,14 +43,13 @@
     "@commitlint/cli": "^19.3.0",
     "@commitlint/config-conventional": "^19.2.2",
     "@opengovsg/credits-generator": "^1.0.7",
+    "@types/adm-zip": "^0.5.5",
     "@types/debug": "^4.1.12",
     "@types/jest": "^29.5.12",
     "@types/node": "^22.5.5",
+    "@types/npmlog": "^7.0.0",
     "@typescript-eslint/eslint-plugin": "^8.0.0",
     "@typescript-eslint/parser": "^8.0.0",
-    "@types/adm-zip": "^0.5.5",
-    "@types/npmlog": "^7.0.0",
-   
     "async-mutex": "^0.5.0",
     "eslint": "^9.8.0",
     "eslint-config-prettier": "^9.1.0",
