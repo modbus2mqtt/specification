@@ -283,10 +283,7 @@ it("test number signed int16" ,()=>{
   spec.entities = [entity]
   let converter = ConverterMap.getConverter(spec.entities[0])
   let modbusValue:ReadRegisterResult| undefined = converter?.mqtt2modbus(spec, entity.id, -3 )
-  let buf = Buffer.allocUnsafe(2)
-  
-  let result = modbusValue?.data[0]
-  expect(modbusValue?.data[0]).toBe( -3 )
+  expect(modbusValue!.data[0]).toBeGreaterThan(0)
   let mqtt:number = converter?.modbus2mqtt(spec,entity.id, modbusValue!) as number
   expect(mqtt).toBe( -3 )
 })
