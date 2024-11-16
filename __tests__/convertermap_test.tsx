@@ -1,7 +1,8 @@
 import { ConverterMap } from '../src/convertermap'
-import { Converters, Ientity, Ispecification, ModbusRegisterType } from '@modbus2mqtt/specification.shared'
+import { Converters, EnumNumberFormat, Ientity, Ispecification, ModbusRegisterType } from '@modbus2mqtt/specification.shared'
 import { ConfigSpecification } from '../src/configspec'
 import { it, expect, beforeAll } from '@jest/globals'
+import { ReadRegisterResult } from '../src/converter'
 
 ConfigSpecification.setMqttdiscoverylanguage('en', undefined)
 function getReadRegisterResult(n: number): any {
@@ -248,6 +249,48 @@ it('test number converter', () => {
   modbusValue = converter?.mqtt2modbus(spec, entity.id, 20.07)
   expect(Math.abs(modbusValue!.data[0] - 7)).toBeLessThan(0.00001)
 })
+it("test number float" ,()=>{
+  let entity: Ientity = {
+    id: 1,
+    mqttname: 'mqtt',
+    converter: { name: 'number', registerTypes: []},
+    converterParameters: { multiplier: 1, offset: 0,numberFormat: EnumNumberFormat.float32  },
+    registerType: ModbusRegisterType.HoldingRegister,
+    readonly: false,
+    modbusAddress: 2,
+  }
+  spec.entities = [entity]
+  let converter = ConverterMap.getConverter(spec.entities[0])
+  let modbusValue:ReadRegisterResult| undefined = converter?.mqtt2modbus(spec, entity.id, 17.3 )
+  let buf = Buffer.allocUnsafe(4)
+  
+  let result = modbusValue?.buffer.readFloatBE();
+  expect(Math.abs(result! - 17.3 )).toBeLessThan(0.00001)
+  let mqtt:number = converter?.modbus2mqtt(spec,entity.id, modbusValue!) as number
+  expect(Math.abs(mqtt! - 17.3 )).toBeLessThan(0.00001)
+})
+
+it("test number signed int16" ,()=>{
+  let entity: Ientity = {
+    id: 1,
+    mqttname: 'mqtt',
+    converter: { name: 'number', registerTypes: []},
+    converterParameters: { multiplier: 1, offset: 0,numberFormat: EnumNumberFormat.signedInt16  },
+    registerType: ModbusRegisterType.HoldingRegister,
+    readonly: false,
+    modbusAddress: 2,
+  }
+  spec.entities = [entity]
+  let converter = ConverterMap.getConverter(spec.entities[0])
+  let modbusValue:ReadRegisterResult| undefined = converter?.mqtt2modbus(spec, entity.id, -3 )
+  let buf = Buffer.allocUnsafe(2)
+  
+  let result = modbusValue?.data[0]
+  expect(modbusValue?.data[0]).toBe( -3 )
+  let mqtt:number = converter?.modbus2mqtt(spec,entity.id, modbusValue!) as number
+  expect(mqtt).toBe( -3 )
+})
+
 it('test select converter', () => {
   let entity: Ientity = {
     id: 1,

@@ -20,9 +20,17 @@ export class NumberConverter extends Converter {
           : EnumNumberFormat.default
 
       let v = value.data[0]
-      if (numberFormat == EnumNumberFormat.float32)
-        if (value.buffer && value.buffer.length >= 4) v = value.buffer.readFloatBE()
-        else new Error('NumberConverter.modbus2mqtt: Invalid buffer to convert to Float entityid = ' + entityid)
+      switch (numberFormat )
+      {
+        case EnumNumberFormat.float32:
+          if (value.buffer && value.buffer.length >= 4) v = value.buffer.readFloatBE()
+            else new Error('NumberConverter.modbus2mqtt: Invalid buffer to convert to Float entityid = ' + entityid)
+          break;
+          case EnumNumberFormat.signedInt16:
+            if (value.buffer && value.buffer.length >= 2) v = value.buffer.readInt16BE()
+              else new Error('NumberConverter.modbus2mqtt: Invalid buffer to convert to Signed int entityid = ' + entityid)
+            break;
+        }
       let multiplier = mspec.getMultiplier(entityid)
       let offset = mspec.getOffset(entityid)
       if (!multiplier) multiplier = 1
@@ -48,18 +56,25 @@ export class NumberConverter extends Converter {
 
       value = ((value as number) - offset) / multiplier
       let v = value
-      if (numberFormat == EnumNumberFormat.float32) {
-        buf.writeFloatBE(v)
-      } else {
-        buf = Buffer.allocUnsafe(2)
-        buf.writeUInt16BE(v)
-        let r: ReadRegisterResult = {
+      switch (numberFormat )
+      {
+        case EnumNumberFormat.float32:
+            buf.writeFloatBE(v)
+          break;
+          case EnumNumberFormat.signedInt16:
+            buf.writeInt16BE(v)
+            v = buf.readUInt16BE()
+            break;
+          default:
+            buf = Buffer.allocUnsafe(2)
+            buf.writeUInt16BE(v)
+      }
+      let r: ReadRegisterResult = {
           data: [v],
           buffer: buf,
-        }
-        return r
       }
-    }
+      return r        
+      }
     throw new Error('entityid not found in entities')
   }
   override getParameterType(_entity: Ientity): string | undefined {
@@ -70,7 +85,8 @@ export class NumberConverter extends Converter {
     switch ((entity.converterParameters as Inumber).numberFormat) {
       case EnumNumberFormat.float32:
         return 2
-      default:
+        case EnumNumberFormat.signedInt16:
+        default:
         return 1
     }
   }

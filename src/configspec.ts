@@ -498,19 +498,25 @@ export class ConfigSpecification {
     for (let idx = 0; idx < ConfigSpecification.specifications.length; idx++) {
       let sp = ConfigSpecification.specifications[idx]
       if (
-        sp.filename === specfileName &&
-        sp.status in [SpecificationStatus.cloned, SpecificationStatus.added, SpecificationStatus.new]
+        sp.filename === specfileName         
       )
+      if(sp.status in [SpecificationStatus.cloned, SpecificationStatus.added, SpecificationStatus.new])
         try {
           found = true
           fs.unlinkSync(ConfigSpecification.getSpecificationPath(sp))
           fs.rmSync(ConfigSpecification.getLocalFilesPath(sp.filename))
-
-          ConfigSpecification.specifications.splice(idx, 1)
+          if(sp.status == SpecificationStatus.cloned )
+            this.readYaml()
+          else
+            ConfigSpecification.specifications.splice(idx, 1)
+          log.log(LogLevelEnum.notice, 'Specification removed: ' + sp.filename )
           return
         } catch (e: any) {
           log.log(LogLevelEnum.error, 'Unable to remove Specification ' + sp.filename + ' ' + e.message)
         }
+      else{
+        log.log(LogLevelEnum.error, 'Unable to remove Specification ' + sp.filename + ': invalid status' )
+      }
     }
     // if (!found && (!specfileName || specfileName != '_new'))
     //  log.log(LogLevelEnum.notice, 'specification not found for deletion ' + specfileName)
