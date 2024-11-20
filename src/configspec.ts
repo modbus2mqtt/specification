@@ -194,6 +194,9 @@ export class ConfigSpecification {
         else {
           specification.status = SpecificationStatus.cloned // contributed expect no local
           specification.publicSpecification = published
+          // copy specification files.yaml if local list is empty
+          if( specification.files.length ==0 && published.files.length > 0)
+            specification.files = structuredClone(published.files)
         }
       })
       // Iterate over contributed files
