@@ -508,14 +508,12 @@ export class ConfigSpecification {
           found = true
           fs.unlinkSync(ConfigSpecification.getSpecificationPath(sp))
           fs.rmSync(ConfigSpecification.getLocalFilesPath(sp.filename))
-          if(sp.status == SpecificationStatus.cloned )
-            this.readYaml()
-          else
-            ConfigSpecification.specifications.splice(idx, 1)
           log.log(LogLevelEnum.notice, 'Specification removed: ' + sp.filename )
           return
         } catch (e: any) {
           log.log(LogLevelEnum.error, 'Unable to remove Specification ' + sp.filename + ' ' + e.message)
+        }finally{
+           this.readYaml()
         }
       else{
         log.log(LogLevelEnum.error, 'Unable to remove Specification ' + sp.filename + ': invalid status' )
