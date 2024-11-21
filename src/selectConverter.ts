@@ -44,7 +44,8 @@ export class SelectConverter extends Converter {
     let entity = spec.entities.find((e) => e.id == entityid)
     var msg = ''
     if (entity) {
-      if ((entity.converterParameters as Iselect).options) {
+      let opts:IselectOption[]| undefined = (entity.converterParameters as Iselect).options
+      if (opts && opts.length>0) {
         let opt = (entity.converterParameters as Iselect)!.options!.find((opt) => opt.key == value.data[0])
         return opt && opt.name ? opt.name : ''
       } else {
