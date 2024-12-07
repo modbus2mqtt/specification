@@ -1,5 +1,6 @@
 import npmlog from 'npmlog'
 import Debug from 'debug'
+import fs from 'fs'
 import { format } from 'util'
 export enum LogLevelEnum {
   verbose = 'verbose',
@@ -48,5 +49,10 @@ export class Logger {
   }
   private static forwardToConsole(message: any) {
     debug(message.level + ' ' + message.prefix + ': ' + message.message)
+  }
+  log2File( message: any, ...args: any[]) {
+    if (process.env['JEST_WORKER_ID'] !== undefined) 
+      fs.appendFileSync("test.log",format(message, ...args))
+    
   }
 }
