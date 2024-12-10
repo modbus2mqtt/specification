@@ -17,6 +17,7 @@ import {
   SpecificationFileUsage,
   SpecificationStatus,
   getSpecificationI18nName,
+  newSpecfilename,
 } from '@modbus2mqtt/specification.shared'
 import { getBaseFilename } from '@modbus2mqtt/specification.shared'
 import { IfileSpecification } from './ifilespecification'
@@ -28,6 +29,8 @@ import Debug from 'debug'
 
 import { M2mGitHub } from './m2mgithub'
 import AdmZip from 'adm-zip'
+import { Mutex } from 'async-mutex'
+
 const log = new Logger('specification')
 export const filesUrlPrefix = 'specifications/files'
 const debug = Debug('configSpec')
@@ -38,6 +41,7 @@ export class ConfigSpecification {
     ConfigSpecification.mqttdiscoverylanguage = lang
     ConfigSpecification.githubPersonalToken = ghToken
   }
+  static filesMutex = new Mutex()
   static mqttdiscoverylanguage: string | undefined
   static githubPersonalToken: string | undefined
   static getPublicDir(): string {
@@ -65,44 +69,61 @@ export class ConfigSpecification {
   private static getContributedFilesPath(specfilename: string): string {
     return join(ConfigSpecification.yamlDir, getSpecificationImageOrDocumentUrl('contributed', specfilename, ''))
   }
-  appendSpecificationUrl(specfilename: string, url: IimageAndDocumentUrl): IimageAndDocumentUrl[] | undefined {
+  appendSpecificationUrls(specfilename: string, urls: IimageAndDocumentUrl[]): Promise<IimageAndDocumentUrl[] | undefined> {
     let filesPath = ConfigSpecification.getLocalFilesPath(specfilename)
     if (filesPath && !fs.existsSync(filesPath)) fs.mkdirSync(filesPath, { recursive: true })
-
     let files: IimageAndDocumentFilesType = { version: SPECIFICATION_FILES_VERSION, files:[]}
     let filesName = join(filesPath, 'files.yaml')
-    if (fs.existsSync(filesPath)) {
-      try {
-        let content = fs.readFileSync(filesName, { encoding: 'utf8' })
-        files = parse(content.toString())
-        files = new Migrator().migrateFiles(files)
-      } catch (e: any) {
-        log.log(LogLevelEnum.error, 'Unable to read Files directory for ' + filesName + '\n' + JSON.stringify(e))
-      }
-    } else {
-      // 'Path does not exist '
-    }
 
-    if (files.files.find((uf) => uf.url == url.url && uf.usage == url.usage) == null) {
-      files.files.push(url)
+    return ConfigSpecification.filesMutex.runExclusive(()=>{
+      log.log(LogLevelEnum.notice, "start 0: " + JSON.stringify(files.files))
+
+      if (fs.existsSync(filesPath)) {
+        try {
+          log.log(LogLevelEnum.notice, "Read 0: " + JSON.stringify(files.files))
+          let content = fs.readFileSync(filesName, { encoding: 'utf8' })
+          files = parse(content.toString())
+          files = new Migrator().migrateFiles(files)
+          log.log(LogLevelEnum.notice, "Read: " + JSON.stringify(files.files))
+        } catch (e: any) {
+          log.log(LogLevelEnum.notice, "Read 2: " + e.message)
+          debug( 'Unable to read Files directory for ' + filesName + '\n' + JSON.stringify(e))
+        }
+      } else {
+          log.log(LogLevelEnum.notice, "files path does not exist " + filesPath)
+      }
+      log.log(LogLevelEnum.notice, JSON.stringify(files.files))
+      log.log(LogLevelEnum.notice, JSON.stringify(urls))
+      urls.forEach(url=>{
+        if (files.files.find((uf) => uf.url == url.url && uf.usage == url.usage) == null) {
+          files.files.push(url)
+        }  
+      })
       fs.writeFileSync(filesName, stringify(files), {
         encoding: 'utf8',
         flag: 'w',
       })
       let spec = ConfigSpecification.specifications.find((spec) => spec.filename == specfilename)
       if (spec) spec.files = files.files
-    }
-    return files && files.files ? files.files : undefined
+      log.log(LogLevelEnum.notice, "Result:" + JSON.stringify(files.files))
+
+      return files && files.files ? files.files : undefined  
+    })
   }
-  appendSpecificationFile(
+  appendSpecificationFiles(
     specfilename: string,
-    filename: string,
+    filenames: string[],
     usage: SpecificationFileUsage
-  ): IimageAndDocumentUrl[] | undefined {
-    if (!usage) usage = M2mSpecification.getFileUsage(filename)
-    let url = getSpecificationImageOrDocumentUrl(undefined, specfilename, filename)
-    let iurl = { url: url, fileLocation: FileLocation.Local, usage: usage }
-    return this.appendSpecificationUrl(specfilename, iurl)
+  ):Promise< IimageAndDocumentUrl[] | undefined> {
+    let iurls:IimageAndDocumentUrl[]=[]
+    filenames.forEach(filename=>{
+      if (!usage) usage = M2mSpecification.getFileUsage(filename)
+        let url = getSpecificationImageOrDocumentUrl(undefined, specfilename, filename)
+        let iurl = { url: url, fileLocation: FileLocation.Local, usage: usage }
+        iurls.push(iurl)
+    })
+
+    return this.appendSpecificationUrls(specfilename, iurls)
   }
 
   private static specifications: IfileSpecification[] = []
@@ -426,7 +447,7 @@ export class ConfigSpecification {
     let filename = ConfigSpecification.getSpecificationPath(spec)
     if (spec) {
       if (spec.status == SpecificationStatus.new) {
-        this.renameFilesPath(spec, '_new', 'local')
+        this.renameFilesPath(spec, newSpecfilename, 'local')
       } else if (originalFilename) {
         if (originalFilename != spec.filename) {
           if (
@@ -444,7 +465,7 @@ export class ConfigSpecification {
           this.renameFilesPath(spec, originalFilename, 'local')
         }
       } else throw new Error(spec.status + ' !=' + SpecificationStatus.new + ' and no originalfilename')
-      if (spec.files.length && [SpecificationStatus.published].includes(spec.status)) {
+      if (spec.files && spec.files.length && [SpecificationStatus.published].includes(spec.status)) {
         // cloning with attached files
         let filespath = ConfigSpecification.getPublicFilesPath(spec.filename)
         if (SpecificationStatus.contributed == spec.status) filespath = ConfigSpecification.getContributedFilesPath(spec.filename)

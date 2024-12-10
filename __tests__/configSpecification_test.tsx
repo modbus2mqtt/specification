@@ -81,7 +81,7 @@ it('getSpecificationI18nName ', () => {
   expect(fn).toBe('asdf+-_.')
 })
 
-it('add new specification, add files, set filename', () => {
+it('add new specification, add files, set filename', (done) => {
   let cfgSpec = new ConfigSpecification()
   cfgSpec.readYaml()
 
@@ -95,42 +95,44 @@ it('add new specification, add files, set filename', () => {
   fs.writeFileSync(join(fdirNew, 'test.pdf'), 'test')
   let mspec = newSpecification
   let spec = ConfigSpecification.toFileSpecification(mspec)
-  cfgSpec.appendSpecificationFile(spec.filename, 'test.pdf', SpecificationFileUsage.documentation)
+  cfgSpec.appendSpecificationFiles(spec.filename, ['test.pdf'], SpecificationFileUsage.documentation)
   fs.writeFileSync(join(fdirNew, 'test.jpg'), 'test')
-  cfgSpec.appendSpecificationFile(spec.filename, 'test.jpg', SpecificationFileUsage.img)
+  cfgSpec.appendSpecificationFiles(spec.filename, ['test.jpg'], SpecificationFileUsage.img)
   let g = ConfigSpecification.getSpecificationByFilename('_new')
   expect(g).not.toBeNull()
   expect(g!.files.find((f) => f.url.endsWith('/_new/test.jpg'))).not.toBeNull()
   expect(g!.files.find((f) => f.url.endsWith('/_new/test.pdf'))).not.toBeNull()
   expect(g).not.toBeNull()
-  cfgSpec.appendSpecificationFile(spec.filename, 'test.jpg', SpecificationFileUsage.img)
-  mspec.filename = 'addspectest'
-  let wasCalled = false
-
-  cfgSpec.writeSpecification(
-    mspec,
-    (filename) => {
-      expect(filename).toBe(mspec.filename)
-      wasCalled = true
-    },
-    null
-  )
-  expect(wasCalled).toBeTruthy()
-  expect(fs.existsSync(fdirNew)).toBeFalsy()
-  g = ConfigSpecification.getSpecificationByFilename('addspectest')
-  expect(g).not.toBeNull()
-  expect(g!.files.length).toBe(2)
-  spec.filename = 'modifiedfilename'
-  wasCalled = false
-  cfgSpec.writeSpecification(
-    mspec,
-    (filename) => {
-      expect(filename).toBe(mspec.filename)
-      wasCalled = true
-    },
-    null
-  )
-  cfgSpec.deleteSpecification('addspectest')
+  cfgSpec.appendSpecificationFiles(spec.filename, ['test.jpg'], SpecificationFileUsage.img).then(files=>{
+    mspec.filename = 'addspectest'
+    let wasCalled = false
+  
+    cfgSpec.writeSpecification(
+      mspec,
+      (filename) => {
+        expect(filename).toBe(mspec.filename)
+        wasCalled = true
+      },
+      null
+    )
+    expect(wasCalled).toBeTruthy()
+    expect(fs.existsSync(fdirNew)).toBeFalsy()
+    g = ConfigSpecification.getSpecificationByFilename('addspectest')
+    expect(g).not.toBeNull()
+    expect(g!.files.length).toBe(2)
+    spec.filename = 'modifiedfilename'
+    wasCalled = false
+    cfgSpec.writeSpecification(
+      mspec,
+      (filename) => {
+        expect(filename).toBe(mspec.filename)
+        wasCalled = true
+      },
+      null
+    )
+    cfgSpec.deleteSpecification('addspectest')
+    done()
+  })
 })
 it('contribution', () => {
   singleMutex.runExclusive(() => {
