@@ -76,17 +76,13 @@ export class ConfigSpecification {
     let filesName = join(filesPath, 'files.yaml')
 
     return ConfigSpecification.filesMutex.runExclusive(()=>{
-      log.log(LogLevelEnum.notice, "start 0: " + JSON.stringify(files.files))
 
       if (fs.existsSync(filesPath)) {
         try {
-          log.log(LogLevelEnum.notice, "Read 0: " + JSON.stringify(files.files))
           let content = fs.readFileSync(filesName, { encoding: 'utf8' })
           files = parse(content.toString())
           files = new Migrator().migrateFiles(files)
-          log.log(LogLevelEnum.notice, "Read: " + JSON.stringify(files.files))
         } catch (e: any) {
-          log.log(LogLevelEnum.notice, "Read 2: " + e.message)
           debug( 'Unable to read Files directory for ' + filesName + '\n' + JSON.stringify(e))
         }
       } else {
@@ -105,7 +101,6 @@ export class ConfigSpecification {
       })
       let spec = ConfigSpecification.specifications.find((spec) => spec.filename == specfilename)
       if (spec) spec.files = files.files
-      log.log(LogLevelEnum.notice, "Result:" + JSON.stringify(files.files))
 
       return files && files.files ? files.files : undefined  
     })
