@@ -17,7 +17,6 @@ import {
   SpecificationFileUsage,
   SpecificationStatus,
   getSpecificationI18nName,
-  newSpecfilename,
 } from '@modbus2mqtt/specification.shared'
 import { getBaseFilename } from '@modbus2mqtt/specification.shared'
 import { IfileSpecification } from './ifilespecification'
@@ -442,7 +441,7 @@ export class ConfigSpecification {
     let filename = ConfigSpecification.getSpecificationPath(spec)
     if (spec) {
       if (spec.status == SpecificationStatus.new) {
-        this.renameFilesPath(spec, newSpecfilename, 'local')
+        this.renameFilesPath(spec, "_new", 'local')
       } else if (originalFilename) {
         if (originalFilename != spec.filename) {
           if (
