@@ -247,6 +247,7 @@ it('startPolling', (done) => {
   //m['ghPollInterval'] = [1, 2, 3, 4]
   M2mSpecification.closeContribution = TestM2mSpecification.closeContribution
   TestM2mSpecification.pollOriginal = M2mSpecification['poll']
+  M2mSpecification['pollingTimeout'] = 100
   M2mSpecification['poll'] = TestM2mSpecification.poll
   let o = M2mSpecification.startPolling(specP.filename, (e) => {
     expect(true).toBeFalsy()

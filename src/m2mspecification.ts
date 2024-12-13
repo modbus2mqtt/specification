@@ -903,7 +903,7 @@ export class M2mSpecification implements IspecificationValidator {
     if (idx >= 0) return filename.substring(idx + 1)
     return filename
   }
-
+  private static pollingTimeout = 15 * 1000
   static startPolling(specfilename: string, error: (e: any) => void): Observable<IpullRequest> | undefined {
     debug('startPolling')
     let spec = ConfigSpecification.getSpecificationByFilename(specfilename)
@@ -918,7 +918,7 @@ export class M2mSpecification implements IspecificationValidator {
         m2mSpecification: mspec,
         interval: setInterval(() => {
           M2mSpecification.poll(spec.filename, error)
-        }, 15 * 1000 ),
+        }, M2mSpecification.pollingTimeout ),
       }
       M2mSpecification.ghContributions.set(spec.filename, c)
       return c.monitor
