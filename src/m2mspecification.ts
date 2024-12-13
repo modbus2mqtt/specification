@@ -692,6 +692,14 @@ export class M2mSpecification implements IspecificationValidator {
 
     return (ent.converterParameters as Inumber)!.multiplier
   }
+  getDecimals(entityId: number): number | undefined {
+//    let rc = this.getPropertyFromVariable(entityId, VariableTargetParameters.entityMultiplier)
+//    if (rc) return rc as number | undefined
+    let ent = this.getEntityFromId(entityId)
+    if (!ent || !ent.converterParameters || undefined == (ent.converterParameters as Inumber)!.decimals) return undefined
+
+    return (ent.converterParameters as Inumber)!.decimals
+  }
   getOffset(entityId: number): number | undefined {
     let rc = this.getPropertyFromVariable(entityId, VariableTargetParameters.entityOffset)
     if (rc) return rc as number | undefined
@@ -910,7 +918,7 @@ export class M2mSpecification implements IspecificationValidator {
         m2mSpecification: mspec,
         interval: setInterval(() => {
           M2mSpecification.poll(spec.filename, error)
-        }, 100),
+        }, 15 * 1000 ),
       }
       M2mSpecification.ghContributions.set(spec.filename, c)
       return c.monitor

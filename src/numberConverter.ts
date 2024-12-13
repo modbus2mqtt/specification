@@ -35,7 +35,12 @@ export class NumberConverter extends Converter {
       let offset = mspec.getOffset(entityid)
       if (!multiplier) multiplier = 1
       if (!offset) offset = 0
-      return parseFloat((v * multiplier + offset).toFixed(5))
+      let dec = mspec.getDecimals(entityid)
+      v = v * multiplier + offset
+      if( dec != undefined)
+        return parseFloat(v.toFixed(mspec.getDecimals(entityid)))
+      else
+        return v
     } else throw new Error('entityid not found in entities')
   }
 
