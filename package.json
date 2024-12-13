@@ -1,6 +1,6 @@
 {
   "name": "@modbus2mqtt/specification",
-  "version": "0.15.23",
+  "version": "0.15.24",
   "description": "File access, github access and validation for specifications",
   "keywords": [
     "modbus2mqtt",
@@ -27,12 +27,12 @@
     "validate": "bin/validate.js"
   },
   "dependencies": {
-    "@modbus2mqtt/specification.shared": "^0.10.7",
+    "@modbus2mqtt/specification.shared": "^0.10.8",
     "@octokit/rest": "^20.1.1",
     "adm-zip": "^0.5.16",
+    "async-mutex": "^0.5.0",
     "commander": "^12.1.0",
     "debug": "^4.3.7",
-    "async-mutex": "^0.5.0",
     "fs": "^0.0.1-security",
     "logger": "^0.0.1",
     "npmlog": "^7.0.1",
