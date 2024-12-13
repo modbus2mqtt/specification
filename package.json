@@ -1,6 +1,6 @@
 {
   "name": "@modbus2mqtt/specification",
-  "version": "0.15.22",
+  "version": "0.15.23",
   "description": "File access, github access and validation for specifications",
   "keywords": [
     "modbus2mqtt",
@@ -32,6 +32,7 @@
     "adm-zip": "^0.5.16",
     "commander": "^12.1.0",
     "debug": "^4.3.7",
+    "async-mutex": "^0.5.0",
     "fs": "^0.0.1-security",
     "logger": "^0.0.1",
     "npmlog": "^7.0.1",
@@ -50,7 +51,6 @@
     "@types/npmlog": "^7.0.0",
     "@typescript-eslint/eslint-plugin": "^8.0.0",
     "@typescript-eslint/parser": "^8.0.0",
-    "async-mutex": "^0.5.0",
     "eslint": "^9.8.0",
     "eslint-config-prettier": "^9.1.0",
     "eslint-plugin-prettier": "^5.2.1",
