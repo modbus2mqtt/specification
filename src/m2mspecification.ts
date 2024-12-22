@@ -113,7 +113,7 @@ export class M2mSpecification implements IspecificationValidator {
 
         if (errors.length == 0 && messages.length > 0 && (!note || note.length == 0))
           throw new Error('Validation failed with warning, but no note text available')
-        let fileList = this.getSpecificationsFilesList()
+        let fileList = this.getSpecificationsFilesList(ConfigSpecification.getLocalDir())
         let spec = this.settings as IbaseSpecification
         let title = ''
         let message = ''
@@ -367,11 +367,15 @@ export class M2mSpecification implements IspecificationValidator {
         })
     })
   }
-  getSpecificationsFilesList(): string[] {
+  getSpecificationsFilesList(localDir: string): string[] {
     let files: string[] = []
     let spec = this.settings as IbaseSpecification
-    spec.files.forEach((fs) => {
-      if (fs.fileLocation == FileLocation.Local) files.push(fs.url.replace(/^\//g, ''))
+    spec.files.forEach((file) => {
+      let filePath = file.url.replace(/^\//g, '')
+      if( file.fileLocation == FileLocation.Local && fs.existsSync(join ( localDir, filePath)))
+        files.push(filePath)
+      // The file can also be already published. Then it's not neccessary to push it again
+      // In this case, it's in the public directory and not in local directory
     })
     if (spec.files.length > 0) {
       let filesName = join(getSpecificationImageOrDocumentUrl('', spec.filename, 'files.yaml'))
