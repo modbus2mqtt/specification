@@ -376,6 +376,13 @@ export class ConfigSpecification {
     if (!spec.manufacturer || spec.manufacturer.length == 0) delete spec.manufacturer
     if (!spec.model || spec.model.length == 0) delete spec.model
     if (spec.status != SpecificationStatus.contributed) delete spec.pullNumber
+    if( (spec as any).stateTopic )
+      delete (spec as any).stateTopic
+    if( (spec as any).statePayload )
+      delete (spec as any).statePayload
+    if( (spec as any).triggerPollTopic )
+      delete (spec as any).triggerPollTopic
+    
     delete spec.publicSpecification
     delete (spec as any).identified
     delete (spec as any).status
