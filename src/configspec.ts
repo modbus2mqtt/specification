@@ -372,7 +372,9 @@ export class ConfigSpecification {
       if ((e as any).identified != undefined) delete (e as any).identified
       if ((e as any).mqttValue != undefined) delete (e as any).mqttValue
       if ((e as any).modbusValue != undefined) delete (e as any).modbusValue
-    })
+      if( (e as any).commandTopicModbus) delete (e as any).commandTopicModbus
+      if( (e as any).commandTopic) delete (e as any).commandTopic
+      })
     if (!spec.manufacturer || spec.manufacturer.length == 0) delete spec.manufacturer
     if (!spec.model || spec.model.length == 0) delete spec.model
     if (spec.status != SpecificationStatus.contributed) delete spec.pullNumber
@@ -382,6 +384,8 @@ export class ConfigSpecification {
       delete (spec as any).statePayload
     if( (spec as any).triggerPollTopic )
       delete (spec as any).triggerPollTopic
+    if( (spec as any).commandTopicModbus)
+      delete (spec as any).commandTopicModbus
     
     delete spec.publicSpecification
     delete (spec as any).identified
