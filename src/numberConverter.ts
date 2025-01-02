@@ -26,9 +26,17 @@ export class NumberConverter extends Converter {
           if (value.buffer && value.buffer.length >= 4) v = value.buffer.readFloatBE()
             else new Error('NumberConverter.modbus2mqtt: Invalid buffer to convert to Float entityid = ' + entityid)
           break;
-          case EnumNumberFormat.signedInt16:
-            if (value.buffer && value.buffer.length >= 2) v = value.buffer.readInt16BE()
-              else new Error('NumberConverter.modbus2mqtt: Invalid buffer to convert to Signed int entityid = ' + entityid)
+        case EnumNumberFormat.signedInt16:
+          if (value.buffer && value.buffer.length >= 2) v = value.buffer.readInt16BE()
+            else new Error('NumberConverter.modbus2mqtt: Invalid buffer to convert to Signed16 int entityid = ' + entityid)
+          break;
+        case EnumNumberFormat.unsignedInt32:
+          if (value.buffer && value.buffer.length >= 4) v = value.buffer.readUint32BE()
+            else new Error('NumberConverter.modbus2mqtt: Invalid buffer to convert to Unsigned32 entityid = ' + entityid)
+          break;
+        case EnumNumberFormat.signedInt32:
+            if (value.buffer && value.buffer.length >= 4) v = value.buffer.readInt32BE()
+              else new Error('NumberConverter.modbus2mqtt: Invalid buffer to convert to Signed32 entityid = ' + entityid)
             break;
         }
       let multiplier = mspec.getMultiplier(entityid)
@@ -61,15 +69,23 @@ export class NumberConverter extends Converter {
       switch (numberFormat )
       {
         case EnumNumberFormat.float32:
-            buf.writeFloatBE(v)
+          buf.writeFloatBE(v)
           break;
-          case EnumNumberFormat.signedInt16:
-            buf.writeInt16BE(v)
-            v = buf.readUInt16BE()
-            break;
-          default:
-            buf = Buffer.allocUnsafe(2)
-            buf.writeUInt16BE(v)
+        case EnumNumberFormat.signedInt16:
+          buf.writeInt16BE(v)
+          v = buf.readUInt16BE()
+          break;
+        case EnumNumberFormat.unsignedInt32:
+          buf.writeUint32BE(v)
+          v = buf.readUint32BE()
+          break;
+        case EnumNumberFormat.signedInt32:
+          buf.writeInt32BE(v)
+          v = buf.readInt32BE()
+          break;
+        default:
+          buf = Buffer.allocUnsafe(2)
+          buf.writeUInt16BE(v)
       }
       let r: ReadRegisterResult = {
           data: [v],
@@ -86,9 +102,11 @@ export class NumberConverter extends Converter {
     if (entity.converterParameters == undefined || (entity.converterParameters as Inumber).numberFormat == undefined) return 1
     switch ((entity.converterParameters as Inumber).numberFormat) {
       case EnumNumberFormat.float32:
+      case EnumNumberFormat.signedInt32:
+      case EnumNumberFormat.unsignedInt32:
         return 2
-        case EnumNumberFormat.signedInt16:
-        default:
+      case EnumNumberFormat.signedInt16:
+      default:
         return 1
     }
   }
