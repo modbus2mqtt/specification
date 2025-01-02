@@ -1,6 +1,6 @@
 {
   "name": "@modbus2mqtt/specification",
-  "version": "0.15.25",
+  "version": "0.15.26",
   "description": "File access, github access and validation for specifications",
   "keywords": [
     "modbus2mqtt",
