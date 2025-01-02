@@ -374,7 +374,8 @@ export class ConfigSpecification {
       if ((e as any).modbusValue != undefined) delete (e as any).modbusValue
       if( (e as any).commandTopicModbus) delete (e as any).commandTopicModbus
       if( (e as any).commandTopic) delete (e as any).commandTopic
-      })
+      if( e.converter  && (e.converter as any).registerTypes ) delete (e.converter as any).registerTypes
+    })
     if (!spec.manufacturer || spec.manufacturer.length == 0) delete spec.manufacturer
     if (!spec.model || spec.model.length == 0) delete spec.model
     if (spec.status != SpecificationStatus.contributed) delete spec.pullNumber
