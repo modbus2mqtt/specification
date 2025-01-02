@@ -12,6 +12,8 @@ import {
 import { LogLevelEnum, Logger } from './log'
 import { ReadRegisterResult } from './converter'
 import { ConfigSpecification } from './configspec'
+const debug = require('debug')('selectConverter')
+
 
 const log = new Logger('selectconverter')
 export class SelectConverter extends Converter {
@@ -35,7 +37,8 @@ export class SelectConverter extends Converter {
         return options
       }
     }
-    throw new Error('No options available for entity id: ' + entityid)
+    debug('No options available for entity id: ' + entityid)
+    return []
   }
   override publishModbusValues(): boolean {
     return true
