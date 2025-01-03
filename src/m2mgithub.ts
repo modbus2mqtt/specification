@@ -15,7 +15,7 @@ export const githubPublicNames = {
 }
 
 const log = new Logger('m2mGithub')
-interface ITreeParam {
+export interface ITreeParam {
   path: string
   mode: '100644'
   type: 'blob'
@@ -379,7 +379,26 @@ export class M2mGitHub {
           .catch(reject)
     })
   }
+  private checkFiles(root:string, files:string[]):Promise<ITreeParam>[]{
+    let all: Promise<ITreeParam>[] = []
+    files.forEach((file) => {
+      debug('root: ' + root + ' file: ' + file)
+      let fullPath = join(root, file)
+      if( ! fs.existsSync(fullPath)){
+        if( fullPath.indexOf("/files/") != -1 && !fullPath.endsWith("files.yaml")){
+          // Can be ignored if the files are missing, they have been published already
+          debug("File not found: "+ fullPath)
+        }  
+        else{
+          throw new Error("File not found " + fullPath);
+        }
+      }
+      else
+        all.push(this.uploadFileAndCreateTreeParameter(root, file))
 
+    })
+    return all;
+  }
   commitFiles(root: string, branchName: string, files: string[], title: string, message: string): Promise<string> {
     return new Promise<string>((resolve, reject) => {
       this.waitForOwnModbus2MqttRepo()
@@ -400,12 +419,14 @@ export class M2mGitHub {
                 )
               else {
                 debug('start committing')
-                let all: Promise<ITreeParam>[] = []
-                files.forEach((file) => {
-                  debug('root: ' + root + ' file: ' + file)
-                  all.push(this.uploadFileAndCreateTreeParameter(root, file))
-                })
-                Promise.all(all)
+                let all:Promise<ITreeParam>[]
+                try {
+                  let all = this.checkFiles(root, files)
+                }catch(e){
+                  reject(e)
+                  return
+                }
+                Promise.all(all!)
                   .then((trees) => {
                     debug('get Branch')
                     this.octokit!.git.getRef({

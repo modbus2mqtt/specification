@@ -3,7 +3,7 @@ import { M2mGitHub } from '../src/m2mgithub'
 import { yamlDir } from './configsbase'
 import { join } from 'path'
 import { ConfigSpecification } from '../src/configspec'
-import { beforeAll, expect, it, describe } from '@jest/globals'
+import { beforeAll, expect, it, describe, jest } from '@jest/globals'
 import * as fs from 'fs'
 
 const debug = Debug('m2mgithub')
@@ -64,6 +64,33 @@ function testWait(github: M2mGitHub, done: any) {
       })
   })
 }
+it('checkFiles files.yaml exists, other file is missing=> OK', () => {
+  let root = "./__tests__/yaml-dir"
+  let github = new M2mGitHub(null,root )
+  let oldFn = M2mGitHub.prototype['uploadFileAndCreateTreeParameter']
+  M2mGitHub.prototype['uploadFileAndCreateTreeParameter'] = jest.fn<(root: string, filemname:string) => Promise<any>>().mockResolvedValue({})
+  let a = github['checkFiles'](root,
+    ["local/specifications/files/waterleveltransmitter/files.yaml",
+    "local/specifications/files/waterleveltransmitter/test.png"])
+  expect(a.length).toBe(1)
+  M2mGitHub.prototype['uploadFileAndCreateTreeParameter'] =oldFn
+})
+
+it('checkFiles files.yaml does not exist => Exception', () => {
+  let root = "./__tests__/yaml-dir"
+  let github = new M2mGitHub(null,root )
+  let oldFn = M2mGitHub.prototype['uploadFileAndCreateTreeParameter']
+  M2mGitHub.prototype['uploadFileAndCreateTreeParameter'] = jest.fn<(root: string, filemname:string) => Promise<any>>().mockResolvedValue({})
+  let t:()=>void =()=>{
+    github['checkFiles'](root,
+      ["local/specifications/files/notexists/files.yaml",
+      "local/specifications/files/waterleveltransmitter/test.png"])
+  }
+  expect( t ).toThrowError()
+  M2mGitHub.prototype['uploadFileAndCreateTreeParameter'] =oldFn
+})
+
+
 describe.skip('skipped because github tests require NODE_AUTH_TOKEN', () => {
   it('init with no github token', (done) => {
     let publictestdir = join(yamlDir, 'publictest')
@@ -92,3 +119,4 @@ describe.skip('skipped because github tests require NODE_AUTH_TOKEN', () => {
     // })
   }, 10000)
 })
+
