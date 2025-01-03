@@ -65,6 +65,32 @@ it('write/Migrate', () => {
   fs.unlinkSync(join(ConfigSpecification.yamlDir, 'local/specifications', 'waterleveltransmitter1.yaml'))
 })
 
+function cleanDimplexLocal(){
+  let filePath  = join(ConfigSpecification.yamlDir, 'local/specifications', 'dimplexpco5.yaml')
+  if( fs.existsSync(filePath))
+    fs.unlinkSync(filePath)
+  fs.rmSync(join(ConfigSpecification.yamlDir, 'local/specifications/files/dimplexpco5'), { recursive: true, force: true });
+
+}
+
+
+it('write cloned file', () => {
+  const configSpec = new ConfigSpecification()
+  cleanDimplexLocal();
+  configSpec.readYaml()
+  let wl = ConfigSpecification.getSpecificationByFilename('dimplexpco5')!
+
+  configSpec.writeSpecificationFromFileSpec(wl, wl.filename)
+  let specsDir = join(ConfigSpecification.yamlDir, 'local/specifications')
+  expect( fs.existsSync(join(specsDir, 'dimplexpco5.yaml'))).toBeTruthy()
+  expect( fs.existsSync(join(specsDir, 'files/dimplexpco5', 'files.yaml'))).toBeTruthy()
+  expect( fs.existsSync(join(specsDir, 'files/dimplexpco5', 'IMG_1552.jpg'))).toBeTruthy()
+  configSpec.readYaml()
+  wl = ConfigSpecification.getSpecificationByFilename('dimplexpco5')!
+  expect(wl.version).toBe(SPECIFICATION_VERSION)
+  cleanDimplexLocal();
+})
+
 it('getFileNameFromName remove non ascii characters', () => {
   const name = '/\\*& asdf+-_.'
   let fn = getFileNameFromName(name)

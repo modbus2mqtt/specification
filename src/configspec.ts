@@ -475,8 +475,7 @@ export class ConfigSpecification {
         // cloning with attached files
         let filespath = ConfigSpecification.getPublicFilesPath(spec.filename)
         if (SpecificationStatus.contributed == spec.status) filespath = ConfigSpecification.getContributedFilesPath(spec.filename)
-        let localFilesPath = join(ConfigSpecification.yamlDir, ConfigSpecification.getLocalFilesPath(spec.filename))
-        filespath = join(ConfigSpecification.yamlDir, filespath)
+        let localFilesPath = ConfigSpecification.getLocalFilesPath(spec.filename)
         if (!fs.existsSync(localFilesPath) && fs.existsSync(filespath)) {
           fs.cpSync(filespath, localFilesPath, { recursive: true })
         }
