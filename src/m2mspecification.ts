@@ -51,12 +51,14 @@ export interface ImodbusValues {
   holdingRegisters: Map<number, IReadRegisterResultOrError>
   analogInputs: Map<number, IReadRegisterResultOrError>
   coils: Map<number, IReadRegisterResultOrError>
+  discreteInputs: Map<number, IReadRegisterResultOrError>
 }
 export function emptyModbusValues(): ImodbusValues {
   return {
     holdingRegisters: new Map<number, IReadRegisterResultOrError>(),
     coils: new Map<number, IReadRegisterResultOrError>(),
     analogInputs: new Map<number, IReadRegisterResultOrError>(),
+    discreteInputs: new Map<number, IReadRegisterResultOrError>(),
   }
 }
 interface Icontribution {
@@ -440,11 +442,13 @@ export class M2mSpecification implements IspecificationValidator {
       inSpec.testdata &&
       ((inSpec.testdata.analogInputs && inSpec.testdata.analogInputs.length > 0) ||
         (inSpec.testdata.holdingRegisters && inSpec.testdata.holdingRegisters.length > 0) ||
-        (inSpec.testdata.coils && inSpec.testdata.coils.length > 0))
+        (inSpec.testdata.coils && inSpec.testdata.coils.length > 0) ||
+        (inSpec.testdata.discreteInputs && inSpec.testdata.discreteInputs.length > 0))
     ) {
       M2mSpecification.copyFromTestData(inSpec.testdata.holdingRegisters, valuesLocal.holdingRegisters)
       M2mSpecification.copyFromTestData(inSpec.testdata.analogInputs, valuesLocal.analogInputs)
       M2mSpecification.copyFromTestData(inSpec.testdata.coils, valuesLocal.coils)
+      M2mSpecification.copyFromTestData(inSpec.testdata.discreteInputs, valuesLocal.discreteInputs)
     } else {
       // No values available neither testdata nor
     }
@@ -489,6 +493,9 @@ export class M2mSpecification implements IspecificationValidator {
                   break
                 case ModbusRegisterType.Coils:
                   value = values.coils.get(address)
+                  break
+                case ModbusRegisterType.DiscreteInputs:
+                  value = values.discreteInputs.get(address)
                   break
               }
               if (value && value.result) {
