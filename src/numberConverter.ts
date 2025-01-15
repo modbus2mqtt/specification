@@ -45,8 +45,8 @@ export class NumberConverter extends Converter {
       if (!offset) offset = 0
       let dec = mspec.getDecimals(entityid)
       v = v * multiplier + offset
-      if( dec != undefined)
-        return parseFloat(v.toFixed(mspec.getDecimals(entityid)))
+      if( dec != undefined  && dec >=0 && dec < 100)
+          return parseFloat(v.toFixed(dec))
       else
         return v
 
