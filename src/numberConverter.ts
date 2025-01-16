@@ -20,25 +20,24 @@ export class NumberConverter extends Converter {
           : EnumNumberFormat.default
 
       let v = value.data[0]
-      switch (numberFormat )
-      {
+      switch (numberFormat) {
         case EnumNumberFormat.float32:
           if (value.buffer && value.buffer.length >= 4) v = value.buffer.readFloatBE()
-            else new Error('NumberConverter.modbus2mqtt: Invalid buffer to convert to Float entityid = ' + entityid)
-          break;
+          else new Error('NumberConverter.modbus2mqtt: Invalid buffer to convert to Float entityid = ' + entityid)
+          break
         case EnumNumberFormat.signedInt16:
           if (value.buffer && value.buffer.length >= 2) v = value.buffer.readInt16BE()
-            else new Error('NumberConverter.modbus2mqtt: Invalid buffer to convert to Signed16 int entityid = ' + entityid)
-          break;
+          else new Error('NumberConverter.modbus2mqtt: Invalid buffer to convert to Signed16 int entityid = ' + entityid)
+          break
         case EnumNumberFormat.unsignedInt32:
           if (value.buffer && value.buffer.length >= 4) v = value.buffer.readUint32BE()
-            else new Error('NumberConverter.modbus2mqtt: Invalid buffer to convert to Unsigned32 entityid = ' + entityid)
-          break;
+          else new Error('NumberConverter.modbus2mqtt: Invalid buffer to convert to Unsigned32 entityid = ' + entityid)
+          break
         case EnumNumberFormat.signedInt32:
-            if (value.buffer && value.buffer.length >= 4) v = value.buffer.readInt32BE()
-              else new Error('NumberConverter.modbus2mqtt: Invalid buffer to convert to Signed32 entityid = ' + entityid)
-            break;
-        }
+          if (value.buffer && value.buffer.length >= 4) v = value.buffer.readInt32BE()
+          else new Error('NumberConverter.modbus2mqtt: Invalid buffer to convert to Signed32 entityid = ' + entityid)
+          break
+      }
       let multiplier = mspec.getMultiplier(entityid)
       let offset = mspec.getOffset(entityid)
       if (!multiplier) multiplier = 1
@@ -68,33 +67,32 @@ export class NumberConverter extends Converter {
 
       value = ((value as number) - offset) / multiplier
       let v = value
-      switch (numberFormat )
-      {
+      switch (numberFormat) {
         case EnumNumberFormat.float32:
           buf.writeFloatBE(v)
-          break;
+          break
         case EnumNumberFormat.signedInt16:
           buf.writeInt16BE(v)
           v = buf.readUInt16BE()
-          break;
+          break
         case EnumNumberFormat.unsignedInt32:
           buf.writeUint32BE(v)
           v = buf.readUint32BE()
-          break;
+          break
         case EnumNumberFormat.signedInt32:
           buf.writeInt32BE(v)
           v = buf.readInt32BE()
-          break;
+          break
         default:
           buf = Buffer.allocUnsafe(2)
           buf.writeUInt16BE(v)
       }
       let r: ReadRegisterResult = {
-          data: [v],
-          buffer: buf,
+        data: [v],
+        buffer: buf,
       }
-      return r        
-      }
+      return r
+    }
     throw new Error('entityid not found in entities')
   }
   override getParameterType(_entity: Ientity): string | undefined {

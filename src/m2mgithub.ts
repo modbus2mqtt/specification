@@ -379,25 +379,21 @@ export class M2mGitHub {
           .catch(reject)
     })
   }
-  private checkFiles(root:string, files:string[]):Promise<ITreeParam>[]{
+  private checkFiles(root: string, files: string[]): Promise<ITreeParam>[] {
     let all: Promise<ITreeParam>[] = []
     files.forEach((file) => {
       debug('root: ' + root + ' file: ' + file)
       let fullPath = join(root, file)
-      if( ! fs.existsSync(fullPath)){
-        if( fullPath.indexOf("/files/") != -1 && !fullPath.endsWith("files.yaml")){
+      if (!fs.existsSync(fullPath)) {
+        if (fullPath.indexOf('/files/') != -1 && !fullPath.endsWith('files.yaml')) {
           // Can be ignored if the files are missing, they have been published already
-          debug("File not found: "+ fullPath)
-        }  
-        else{
-          throw new Error("File not found " + fullPath);
+          debug('File not found: ' + fullPath)
+        } else {
+          throw new Error('File not found ' + fullPath)
         }
-      }
-      else
-        all.push(this.uploadFileAndCreateTreeParameter(root, file))
-
+      } else all.push(this.uploadFileAndCreateTreeParameter(root, file))
     })
-    return all;
+    return all
   }
   commitFiles(root: string, branchName: string, files: string[], title: string, message: string): Promise<string> {
     return new Promise<string>((resolve, reject) => {
@@ -419,10 +415,10 @@ export class M2mGitHub {
                 )
               else {
                 debug('start committing')
-                let all:Promise<ITreeParam>[]
+                let all: Promise<ITreeParam>[]
                 try {
                   let all = this.checkFiles(root, files)
-                }catch(e){
+                } catch (e) {
                   reject(e)
                   return
                 }
