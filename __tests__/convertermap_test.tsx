@@ -218,12 +218,12 @@ it('test text converter', () => {
   expect(modbusValue!.data).toEqual([(65 << 8) | 66, (67 << 8) | 68, 69 << 8])
 })
 
-it('test number converter', () => {
+it('test number converter ignore decimal places when returning float', () => {
   let entity: Ientity = {
     id: 1,
     mqttname: 'mqtt',
     converter: { name: 'number', registerTypes: [] },
-    converterParameters: { multiplier: 0.01, offset: 0 },
+    converterParameters: { multiplier: 0.01, offset: 0, decimals: 1 },
     registerType: ModbusRegisterType.HoldingRegister,
     readonly: false,
     modbusAddress: 2,
