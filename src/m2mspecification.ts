@@ -61,6 +61,10 @@ export function emptyModbusValues(): ImodbusValues {
     discreteInputs: new Map<number, IReadRegisterResultOrError>(),
   }
 }
+export interface ImodbusError{
+  entityId:number,
+  message:string
+}
 interface Icontribution {
   pullRequest: number
   monitor: Subject<IpullRequest>
@@ -374,8 +378,7 @@ export class M2mSpecification implements IspecificationValidator {
     let spec = this.settings as IbaseSpecification
     spec.files.forEach((file) => {
       let filePath = file.url.replace(/^\//g, '')
-      if( file.fileLocation == FileLocation.Local && fs.existsSync(join ( localDir, filePath)))
-        files.push(filePath)
+      if (file.fileLocation == FileLocation.Local && fs.existsSync(join(localDir, filePath))) files.push(filePath)
       // The file can also be already published. Then it's not neccessary to push it again
       // In this case, it's in the public directory and not in local directory
     })
@@ -428,6 +431,16 @@ export class M2mSpecification implements IspecificationValidator {
           break
       }
     })
+  }
+  static getModbusErrors(mSpec: ImodbusSpecification): ImodbusError[] {
+    let count: ImodbusError[] = []
+    mSpec.entities.forEach((ent) => {
+      if (ent.modbusError) {
+        count.push({ entityId: ent.id
+          , message: ent.modbusError} )
+      }
+    })
+    return count
   }
 
   static fileToModbusSpecification(inSpec: IfileSpecification, values?: ImodbusValues): ImodbusSpecification {
@@ -704,8 +717,8 @@ export class M2mSpecification implements IspecificationValidator {
     return (ent.converterParameters as Inumber)!.multiplier
   }
   getDecimals(entityId: number): number | undefined {
-//    let rc = this.getPropertyFromVariable(entityId, VariableTargetParameters.entityMultiplier)
-//    if (rc) return rc as number | undefined
+    //    let rc = this.getPropertyFromVariable(entityId, VariableTargetParameters.entityMultiplier)
+    //    if (rc) return rc as number | undefined
     let ent = this.getEntityFromId(entityId)
     if (!ent || !ent.converterParameters || undefined == (ent.converterParameters as Inumber)!.decimals) return undefined
 
@@ -929,7 +942,7 @@ export class M2mSpecification implements IspecificationValidator {
         m2mSpecification: mspec,
         interval: setInterval(() => {
           M2mSpecification.poll(spec.filename, error)
-        }, M2mSpecification.pollingTimeout ),
+        }, M2mSpecification.pollingTimeout),
       }
       M2mSpecification.ghContributions.set(spec.filename, c)
       return c.monitor
