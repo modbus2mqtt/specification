@@ -50,9 +50,7 @@ export class Logger {
   private static forwardToConsole(message: any) {
     debug(message.level + ' ' + message.prefix + ': ' + message.message)
   }
-  log2File( message: any, ...args: any[]) {
-    if (process.env['JEST_WORKER_ID'] !== undefined) 
-      fs.appendFileSync("test.log",format(message, ...args))
-    
+  log2File(message: any, ...args: any[]) {
+    if (process.env['JEST_WORKER_ID'] !== undefined) fs.appendFileSync('test.log', format(message, ...args))
   }
 }

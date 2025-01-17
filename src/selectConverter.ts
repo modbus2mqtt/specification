@@ -14,7 +14,6 @@ import { ReadRegisterResult } from './converter'
 import { ConfigSpecification } from './configspec'
 const debug = require('debug')('selectConverter')
 
-
 const log = new Logger('selectconverter')
 export class SelectConverter extends Converter {
   length: number = 1
@@ -47,8 +46,8 @@ export class SelectConverter extends Converter {
     let entity = spec.entities.find((e) => e.id == entityid)
     var msg = ''
     if (entity) {
-      let opts:IselectOption[]| undefined = (entity.converterParameters as Iselect).options
-      if (opts && opts.length>0) {
+      let opts: IselectOption[] | undefined = (entity.converterParameters as Iselect).options
+      if (opts && opts.length > 0) {
         let opt = (entity.converterParameters as Iselect)!.options!.find((opt) => opt.key == value.data[0])
         return opt && opt.name ? opt.name : ''
       } else {

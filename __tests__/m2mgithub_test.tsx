@@ -65,31 +65,36 @@ function testWait(github: M2mGitHub, done: any) {
   })
 }
 it('checkFiles files.yaml exists, other file is missing=> OK', () => {
-  let root = "./__tests__/yaml-dir"
-  let github = new M2mGitHub(null,root )
+  let root = './__tests__/yaml-dir'
+  let github = new M2mGitHub(null, root)
   let oldFn = M2mGitHub.prototype['uploadFileAndCreateTreeParameter']
-  M2mGitHub.prototype['uploadFileAndCreateTreeParameter'] = jest.fn<(root: string, filemname:string) => Promise<any>>().mockResolvedValue({})
-  let a = github['checkFiles'](root,
-    ["local/specifications/files/waterleveltransmitter/files.yaml",
-    "local/specifications/files/waterleveltransmitter/test.png"])
+  M2mGitHub.prototype['uploadFileAndCreateTreeParameter'] = jest
+    .fn<(root: string, filemname: string) => Promise<any>>()
+    .mockResolvedValue({})
+  let a = github['checkFiles'](root, [
+    'local/specifications/files/waterleveltransmitter/files.yaml',
+    'local/specifications/files/waterleveltransmitter/test.png',
+  ])
   expect(a.length).toBe(1)
-  M2mGitHub.prototype['uploadFileAndCreateTreeParameter'] =oldFn
+  M2mGitHub.prototype['uploadFileAndCreateTreeParameter'] = oldFn
 })
 
 it('checkFiles files.yaml does not exist => Exception', () => {
-  let root = "./__tests__/yaml-dir"
-  let github = new M2mGitHub(null,root )
+  let root = './__tests__/yaml-dir'
+  let github = new M2mGitHub(null, root)
   let oldFn = M2mGitHub.prototype['uploadFileAndCreateTreeParameter']
-  M2mGitHub.prototype['uploadFileAndCreateTreeParameter'] = jest.fn<(root: string, filemname:string) => Promise<any>>().mockResolvedValue({})
-  let t:()=>void =()=>{
-    github['checkFiles'](root,
-      ["local/specifications/files/notexists/files.yaml",
-      "local/specifications/files/waterleveltransmitter/test.png"])
+  M2mGitHub.prototype['uploadFileAndCreateTreeParameter'] = jest
+    .fn<(root: string, filemname: string) => Promise<any>>()
+    .mockResolvedValue({})
+  let t: () => void = () => {
+    github['checkFiles'](root, [
+      'local/specifications/files/notexists/files.yaml',
+      'local/specifications/files/waterleveltransmitter/test.png',
+    ])
   }
-  expect( t ).toThrowError()
-  M2mGitHub.prototype['uploadFileAndCreateTreeParameter'] =oldFn
+  expect(t).toThrowError()
+  M2mGitHub.prototype['uploadFileAndCreateTreeParameter'] = oldFn
 })
-
 
 describe.skip('skipped because github tests require NODE_AUTH_TOKEN', () => {
   it('init with no github token', (done) => {
@@ -119,4 +124,3 @@ describe.skip('skipped because github tests require NODE_AUTH_TOKEN', () => {
     // })
   }, 10000)
 })
-
