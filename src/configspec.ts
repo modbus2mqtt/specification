@@ -261,7 +261,7 @@ export class ConfigSpecification {
     }
   }
 
-  static emptyTestData = { holdingRegisters: [], coils: [], analogInputs: [] }
+  static emptyTestData = { holdingRegisters: [], coils: [], analogInputs: [], discreteInputs: [] }
   // removes non configuration data
   // Adds  testData array from Modbus values. They can be used to test specification
   static toFileSpecification(modbusSpec: ImodbusSpecification): IfileSpecification {
@@ -298,6 +298,13 @@ export class ConfigSpecification {
                 error: entity.modbusError,
               })
               break
+            case ModbusRegisterType.DiscreteInputs:
+              fileSpec.testdata.discreteInputs?.push({
+                address: entity.modbusAddress + idx,
+                value: entity.modbusValue[idx],
+                error: entity.modbusError,
+              })
+              break
           }
           entity.converter.registerTypes = []
         }
@@ -305,6 +312,7 @@ export class ConfigSpecification {
     if (fileSpec.testdata.analogInputs?.length == 0) delete fileSpec.testdata.analogInputs
     if (fileSpec.testdata.holdingRegisters?.length == 0) delete fileSpec.testdata.holdingRegisters
     if (fileSpec.testdata.coils?.length == 0) delete fileSpec.testdata.coils
+    if (fileSpec.testdata.discreteInputs?.length == 0) delete fileSpec.testdata.discreteInputs
     fileSpec.entities.forEach((entity) => {
       delete (entity as any)['modbusValue']
       delete (entity as any)['mqttValue']

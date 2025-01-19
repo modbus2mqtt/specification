@@ -18,6 +18,6 @@ export class BinaryConverter extends Converter {
     return 'Ibinary'
   }
   override getModbusRegisterTypes(): ModbusRegisterType[] {
-    return [ModbusRegisterType.Coils, ModbusRegisterType.HoldingRegister]
+    return [ModbusRegisterType.Coils, ModbusRegisterType.DiscreteInputs, ModbusRegisterType.HoldingRegister]
   }
 }
