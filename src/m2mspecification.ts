@@ -61,10 +61,6 @@ export function emptyModbusValues(): ImodbusValues {
     discreteInputs: new Map<number, IReadRegisterResultOrError>(),
   }
 }
-export interface ImodbusError{
-  entityId:number,
-  message:string
-}
 interface Icontribution {
   pullRequest: number
   monitor: Subject<IpullRequest>
@@ -432,16 +428,7 @@ export class M2mSpecification implements IspecificationValidator {
       }
     })
   }
-  static getModbusErrors(mSpec: ImodbusSpecification): ImodbusError[] {
-    let count: ImodbusError[] = []
-    mSpec.entities.forEach((ent) => {
-      if (ent.modbusError) {
-        count.push({ entityId: ent.id
-          , message: ent.modbusError} )
-      }
-    })
-    return count
-  }
+
 
   static fileToModbusSpecification(inSpec: IfileSpecification, values?: ImodbusValues): ImodbusSpecification {
     let valuesLocal = values
