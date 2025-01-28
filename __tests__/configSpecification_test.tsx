@@ -20,6 +20,7 @@ ConfigSpecification['yamlDir'] = yamlDir
 ConfigSpecification.setMqttdiscoverylanguage('en')
 let testdata: ImodbusValues = {
   coils: new Map<number, IReadRegisterResultOrError>(),
+  discreteInputs: new Map<number, IReadRegisterResultOrError>(),
   holdingRegisters: new Map<number, IReadRegisterResultOrError>(),
   analogInputs: new Map<number, IReadRegisterResultOrError>(),
 }

@@ -9,6 +9,7 @@ export interface IModbusData {
   coils?: Idata[]
   holdingRegisters?: Idata[]
   analogInputs?: Idata[]
+  discreteInputs?: Idata[]
 }
 export interface IfileSpecification extends Ispecification {
   version: string

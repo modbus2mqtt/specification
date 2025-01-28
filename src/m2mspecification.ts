@@ -51,12 +51,14 @@ export interface ImodbusValues {
   holdingRegisters: Map<number, IReadRegisterResultOrError>
   analogInputs: Map<number, IReadRegisterResultOrError>
   coils: Map<number, IReadRegisterResultOrError>
+  discreteInputs: Map<number, IReadRegisterResultOrError>
 }
 export function emptyModbusValues(): ImodbusValues {
   return {
     holdingRegisters: new Map<number, IReadRegisterResultOrError>(),
     coils: new Map<number, IReadRegisterResultOrError>(),
     analogInputs: new Map<number, IReadRegisterResultOrError>(),
+    discreteInputs: new Map<number, IReadRegisterResultOrError>(),
   }
 }
 interface Icontribution {
@@ -385,12 +387,12 @@ export class M2mSpecification implements IspecificationValidator {
   }
 
   validate(language: string): Imessage[] {
-    let rc = this.validateSpecification(language, true)
+    let rc = this.validateSpecification(language, true)   
     if ((this.settings as ImodbusSpecification).entities.length > 0) {
       let mSpec = this.settings as ImodbusSpecification
       if (mSpec.identified == undefined) mSpec = M2mSpecification.fileToModbusSpecification(this.settings as IfileSpecification)
       else M2mSpecification.setIdentifiedByEntities(mSpec)
-
+    
       if (mSpec.identified != IdentifiedStates.identified)
         rc.push({ type: MessageTypes.notIdentified, category: MessageCategories.validateSpecification })
     }
@@ -440,11 +442,13 @@ export class M2mSpecification implements IspecificationValidator {
       inSpec.testdata &&
       ((inSpec.testdata.analogInputs && inSpec.testdata.analogInputs.length > 0) ||
         (inSpec.testdata.holdingRegisters && inSpec.testdata.holdingRegisters.length > 0) ||
-        (inSpec.testdata.coils && inSpec.testdata.coils.length > 0))
+        (inSpec.testdata.coils && inSpec.testdata.coils.length > 0) ||
+        (inSpec.testdata.discreteInputs && inSpec.testdata.discreteInputs.length > 0))
     ) {
       M2mSpecification.copyFromTestData(inSpec.testdata.holdingRegisters, valuesLocal.holdingRegisters)
       M2mSpecification.copyFromTestData(inSpec.testdata.analogInputs, valuesLocal.analogInputs)
       M2mSpecification.copyFromTestData(inSpec.testdata.coils, valuesLocal.coils)
+      M2mSpecification.copyFromTestData(inSpec.testdata.discreteInputs, valuesLocal.discreteInputs)
     } else {
       // No values available neither testdata nor
     }
@@ -489,6 +493,9 @@ export class M2mSpecification implements IspecificationValidator {
                   break
                 case ModbusRegisterType.Coils:
                   value = values.coils.get(address)
+                  break
+                case ModbusRegisterType.DiscreteInputs:
+                  value = values.discreteInputs.get(address)
                   break
               }
               if (value && value.result) {
@@ -590,6 +597,7 @@ export class M2mSpecification implements IspecificationValidator {
       M2mSpecification.copyFromTestData(fSettings.testdata.holdingRegisters, values.holdingRegisters)
     if (fSettings.testdata.analogInputs) M2mSpecification.copyFromTestData(fSettings.testdata.analogInputs, values.analogInputs)
     if (fSettings.testdata.coils) M2mSpecification.copyFromTestData(fSettings.testdata.coils, values.coils)
+    if (fSettings.testdata.discreteInputs) M2mSpecification.copyFromTestData(fSettings.testdata.discreteInputs, values.discreteInputs)
     new ConfigSpecification().filterAllSpecifications((spec) => {
       if ([SpecificationStatus.cloned, SpecificationStatus.published, SpecificationStatus.contributed].includes(spec.status)) {
         var mSpec: ImodbusSpecification | undefined = undefined
@@ -641,21 +649,6 @@ export class M2mSpecification implements IspecificationValidator {
     rc = this.allNullDataMatch(spec.testdata.analogInputs, values.analogInputs)
     if (!rc) return false
     return this.allNullDataMatch(spec.testdata.coils, values.coils)
-  }
-  static getWriteFunctionCode(functionCode: ModbusRegisterType): number {
-    switch (functionCode) {
-      case ModbusRegisterType.HoldingRegister:
-        return 16
-      case ModbusRegisterType.Coils:
-        return 15
-      default:
-        if ([15, 16].includes(functionCode as number)) return functionCode as number
-        throw new Error('No Registertype available or Registertype is not writable ')
-    }
-  }
-
-  static getReadFunctionCode(functionCode: ModbusRegisterType): number | undefined {
-    return functionCode
   }
   private getPropertyFromVariable(entityId: number, targetParameter: VariableTargetParameters): string | number | undefined {
     let ent = (this.settings as ImodbusSpecification).entities.find(
