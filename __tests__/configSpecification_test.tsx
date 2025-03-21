@@ -13,7 +13,7 @@ import {
   newSpecification,
 } from '@modbus2mqtt/specification.shared'
 import { IReadRegisterResultOrError } from '../src/m2mspecification'
-import { ImodbusValues } from '../dist'
+import { ImodbusValues } from '../src/m2mspecification'
 import { trace } from 'console'
 
 ConfigSpecification['yamlDir'] = yamlDir
