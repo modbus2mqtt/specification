@@ -14,13 +14,18 @@ jobs:
     name: 'Test E2E'
     steps:
       - uses: actions/checkout@v4
+        if: ${{ !github.event.act }} # skip during local actions testing
       - name: Set up Node.js
+        if: ${{ !github.event.act }} # skip during local actions testing
         uses: actions/setup-node@v1
         with:
           node-version: 20.x
       - name: Install modules
+        if: ${{ !github.event.act }} # skip during local actions testing
         run: npm install .
       - name: build component
+        if: ${{ !github.event.act }} # skip during local actions testing
         run: npx tsc
       - name: Run tests
+        if: ${{ !github.event.act }} # skip during local actions testing
         run: npm test
