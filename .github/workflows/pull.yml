@@ -19,11 +19,14 @@ jobs:
       - name: initialize environment for this
         run: |
           gh auth status
-          bin/pulls.py  init -b main
+          echo "=========="
+          ls 
+          echo "=========="
+          bin/pulls.py  -o ${{github.repository_owner}} init -b main 
           echo "syncpull =========="
-          bin/pulls.py  syncpull --pullrequest ${{github.event.pull_request.base.repo.name}}:${{github.event.number}} --pulltext "${{github.event.pull_request.body}}" pull${{github.event.pull_request.number}} 
+          bin/pulls.py -o ${{github.repository_owner}} syncpull --pullrequest ${{github.event.pull_request.base.repo.name}}:${{github.event.number}} --pulltext "${{github.event.pull_request.body}}" pull${{github.event.pull_request.number}} 
           echo "install =========="
-          bin/pulls.py  install
+          bin/pulls.py -o ${{github.repository_owner}} install
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       - name: Set up Node.js
@@ -33,7 +36,7 @@ jobs:
       - name: Run tests
         id: test
         run: |
-          bin/pulls.py  testorwait   
+          bin/pulls.py -o ${{github.repository_owner}} testorwait ${{github.event.pull_request.base.repo.name}}:${{github.event.number}} "${{github.event.pull_request.body}}"   
         env:
             GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       - name: Packages and system services for e2e Tests
