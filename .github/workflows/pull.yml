@@ -10,17 +10,45 @@ permissions:
 jobs:
   test:
     runs-on: ubuntu-latest
-    environment: release
     name: 'Test E2E'
     steps:
       - uses: actions/checkout@v4
+        with:
+          repository: modbus2mqtt/modbus2mqtt.dev
+          path: .
+      - name: initialize environment for this
+        run: |
+          gh auth status
+          bin/pulls.py  init -b main
+          echo "syncpull =========="
+          bin/pulls.py  syncpull --pullrequest ${{github.event.pull_request.base.repo.name}}:${{github.event.number}} --pulltext "${{github.event.pull_request.body}}" pull${{github.event.pull_request.number}} 
+          echo "install =========="
+          bin/pulls.py  install
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       - name: Set up Node.js
         uses: actions/setup-node@v1
         with:
           node-version: 20.x
-      - name: Install modules
-        run: npm install .
-      - name: build component
-        run: npx tsc
       - name: Run tests
-        run: npm test
+        id: test
+        run: |
+          bin/pulls.py  testorwait   
+        env:
+            GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Packages and system services for e2e Tests
+        if: steps.test.outputs.type == 'testrunner'
+        run: server/cypress/servers/installPackages
+      - name: Local services for e2e Tests
+        if: steps.test.outputs.type == 'testrunner'
+        run: server/cypress/servers/startRunningServers
+      - name: Cypress run
+        if: steps.test.outputs.type == 'testrunner'
+        uses: cypress-io/github-action@v6
+        with:
+          working-directory: server
+          install: false
+
+
+       
+      
