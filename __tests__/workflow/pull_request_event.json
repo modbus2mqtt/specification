@@ -1,4 +1,5 @@
 {
+
       "act": { 
         "owner": "modbus2mqtt"
       },
@@ -8,6 +9,7 @@
 
         "base": {
           "label": "modbus2mqtt:main",
+
           "ref": "main",
           "repo": {
             "name": "specification"
@@ -26,5 +28,5 @@
       "body": "Some Text\nrequired PRs: specification:3"
      
     }
-  }
+}
   
