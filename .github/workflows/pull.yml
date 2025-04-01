@@ -17,37 +17,35 @@ jobs:
         with:
           repository: modbus2mqtt/modbus2mqtt.dev
           path: .
-      - name: initialize environment for this
-        run: |
-          gh auth status
-          bin/pulls.py  init -b main
-          echo "syncpull =========="
-          bin/pulls.py  syncpull --pullrequest ${{github.event.pull_request.base.repo.name}}:${{github.event.number}} --pulltext "${{github.event.pull_request.body}}" pull${{github.event.pull_request.number}} 
-          echo "install =========="
-          bin/pulls.py  install
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       - name: Set up Node.js
         if: ${{ !github.event.act }} # skip during local actions testing
         uses: actions/setup-node@v1
         with:
           node-version: 20.x
-      - name: Run tests
-        id: test
+      - name: Execute all tests
+        id: init
         run: |
-          bin/pulls.py  testorwait   
+          gh auth status
+          owner=""
+          if [ "${{github.event.act.owner}}" != '' ]
+          then
+            owner="-o ${{github.event.act.owner}}"
+          else
+            owner="-o ${{github.repository_owner}}"
+          fi
+          echo "owner=$owner" >> "$GITHUB_OUTPUT"
+          bin/pulls.py   $owner init -b main 
+          echo "::group::syncpull"
+          bin/pulls.py  $owner syncpull --pullrequest ${{github.event.pull_request.base.repo.name}}:${{github.event.number}} --pulltext "${{github.event.pull_request.body}}" pull${{github.event.pull_request.number}}
+          echo "::endgroup::"
+          echo "::group::dependencies local"
+          bin/pulls.py  $owner dependencies local
+          echo "::endgroup::"
+          echo "::group::build"
+          bin/pulls.py  $owner build
+          echo "::endgroup::"
+          echo "::group::testorwait"
+          bin/pulls.py $owner testorwait ${{github.event.pull_request.base.repo.name}}:${{github.event.number}} "${{github.event.pull_request.body}}"  >> "$GITHUB_OUTPUT"
+          echo "::endgroup::"
         env:
-            GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      - name: Packages and system services for e2e Tests
-        if: steps.test.outputs.type == 'testrunner'
-        run: server/cypress/servers/installPackages
-      - name: Local services for e2e Tests
-        if: steps.test.outputs.type == 'testrunner'
-        run: server/cypress/servers/startRunningServers
-      - name: Cypress run
-        if: steps.test.outputs.type == 'testrunner'
-        uses: cypress-io/github-action@v6
-        with:
-          working-directory: server
-          install: false
-          
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
