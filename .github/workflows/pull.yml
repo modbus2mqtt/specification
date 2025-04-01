@@ -16,7 +16,11 @@ jobs:
         with:
           repository: modbus2mqtt/modbus2mqtt.dev
           path: .
-      - name: initialize environment for this
+      - name: Set up Node.js
+        uses: actions/setup-node@v1
+        with:
+          node-version: 20.x
+      - name: Execute all tests
         id: init
         run: |
           gh auth status
@@ -29,40 +33,21 @@ jobs:
           fi
           echo "owner=$owner" >> "$GITHUB_OUTPUT"
           bin/pulls.py   $owner init -b main 
-          echo "syncpull =========="
-          bin/pulls.py  $owner syncpull --pullrequest ${{github.event.pull_request.base.repo.name}}:${{github.event.number}} --pulltext "${{github.event.pull_request.body}}" pull${{github.event.pull_request.number}} 
-          echo "dependencies local =========="
+          echo "::group::syncpull"
+          bin/pulls.py  $owner syncpull --pullrequest ${{github.event.pull_request.base.repo.name}}:${{github.event.number}} --pulltext "${{github.event.pull_request.body}}" pull${{github.event.pull_request.number}}
+          echo "::endgroup::"
+          echo "::group::dependencies local"
           bin/pulls.py  $owner dependencies local
-          echo "dependencies build =========="
+          echo "::endgroup::"
+          echo "::group::build"
           bin/pulls.py  $owner build
+          echo "::endgroup::"
+          echo "::group::testorwait"
+          bin/pulls.py $owner testorwait ${{github.event.pull_request.base.repo.name}}:${{github.event.number}} "${{github.event.pull_request.body}}"  >> "$GITHUB_OUTPUT"
+          echo "::endgroup::"
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      - name: Set up Node.js
-        uses: actions/setup-node@v1
-        with:
-          node-version: 20.x
-      - name: Run tests
-        id: test
-        run: |
-          bin/pulls.py ${{steps.init.outputs.owner}} testorwait ${{github.event.pull_request.base.repo.name}}:${{github.event.number}} "${{github.event.pull_request.body}}"  >> "$GITHUB_OUTPUT"
-          if [ -d server/cypress/e2e ]
-          then
-             echo "runcypress=true"  >> "$GITHUB_OUTPUT"
-          fi
-        env:
-            GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      - name: Packages and system services for e2e Tests
-        if: ${{ (steps.test.outputs.type == 'testrunner' == true) && (steps.test.outputs.runcypress == 'true')  }} 
-        run: server/cypress/servers/installPackages
-      - name: Local services for e2e Tests
-        if: ${{ (steps.test.outputs.type == 'testrunner' == true) && (steps.test.outputs.runcypress == 'true')  }} 
-        run: server/cypress/servers/startRunningServers
-      - name: Cypress run
-        if: ${{ (steps.test.outputs.type == 'testrunner' == true) && (steps.test.outputs.runcypress == 'true')  }} 
-        uses: cypress-io/github-action@v6
-        with:
-          working-directory: server
-          install: false
+
 
 
        
