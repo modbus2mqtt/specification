@@ -22,7 +22,7 @@ jobs:
         uses: actions/setup-node@v1
         with:
           node-version: 20.x
-      - name: Execute all tests
+      - name: Wait for other workflow run or continue
         id: init
         run: |
           gh auth status
@@ -34,6 +34,11 @@ jobs:
             owner="-o ${{github.repository_owner}}"
           fi
           echo "owner=$owner" >> "$GITHUB_OUTPUT"
+          bin/pulls.py $owner testorwait ${{github.event.pull_request.base.repo.name}}:${{github.event.number}} "${{github.event.pull_request.body}}"  >> "$GITHUB_OUTPUT"
+      - name: Execute all tests
+        id: execute
+        if: steps.init.outputs.type== 'testrunner'
+        run: | 
           bin/pulls.py   $owner init -b main 
           echo "::group::syncpull"
           bin/pulls.py  $owner syncpull --pullrequest ${{github.event.pull_request.base.repo.name}}:${{github.event.number}} --pulltext "${{github.event.pull_request.body}}" pull${{github.event.pull_request.number}}
