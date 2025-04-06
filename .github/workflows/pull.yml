@@ -25,7 +25,7 @@ jobs:
       - name: Install mosquitto client
         run: |
           sudo apt update
-          sudo apt install -y mosquitto-clients
+          sudo apt install -y mosquitto mosquitto-clients
       - name: Wait for other workflow run or continue
         id: init
         run: |
