@@ -20,6 +20,10 @@ jobs:
         uses: actions/setup-node@v1
         with:
           node-version: 20.x
+      - name: Install mosquitto client
+        run: |
+          sudo apt update
+          sudo apt install -y mosquitto-clients
       - name: Wait for other workflow run or continue
         id: init
         run: |
