@@ -24,6 +24,7 @@ jobs:
         id: init
         run: |
           gh auth status
+          ls /etc/nginx
           owner=""
           if [ "${{github.event.act.owner}}" != '' ]
           then
