@@ -46,14 +46,14 @@ jobs:
           echo "::group::Syncpull: Switch branch to Pull Request"
           bin/pulls.py  ${{steps.init.outputs.owner}} syncpull --pullrequest ${{github.event.pull_request.base.repo.name}}:${{github.event.number}} --pulltext "${{github.event.pull_request.body}}" pull${{github.event.pull_request.number}}
           echo "::endgroup::"
-          echo "::group::Start servers"
-          bin/pulls.py ${{steps.init.outputs.owner}} test startServers
-          echo "::endgroup::"
           echo "::group::dependencies local: Update in package.json to use pull request rather than github main branch"
           bin/pulls.py  ${{steps.init.outputs.owner}} dependencies local
           echo "::endgroup::"
           echo "::group::Build: execute typescript->javascript"
           bin/pulls.py  ${{steps.init.outputs.owner}} build
+          echo "::endgroup::"
+          echo "::group::Start servers"
+          bin/pulls.py ${{steps.init.outputs.owner}} test startServers
           echo "::endgroup::"
           echo "::group::Testorwait: Execute Test cases (wait or test has been checked in the init step)"
           bin/pulls.py ${{steps.init.outputs.owner}} testorwait ${{github.event.pull_request.base.repo.name}}:${{github.event.number}} "${{github.event.pull_request.body}}"  >> "$GITHUB_OUTPUT"
