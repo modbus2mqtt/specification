@@ -32,6 +32,7 @@ jobs:
             owner="-o ${{github.repository_owner}}"
           fi
           echo "owner=$owner" >> "$GITHUB_OUTPUT"
+          sudo chmod 777 /var/lib/nginx
           bin/pulls.py $owner testorwait --noexec ${{github.event.pull_request.base.repo.name}}:${{github.event.number}} "${{github.event.pull_request.body}}"  >> "$GITHUB_OUTPUT"
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -45,6 +46,9 @@ jobs:
           echo "::group::Syncpull: Switch branch to Pull Request"
           bin/pulls.py  ${{steps.init.outputs.owner}} syncpull --pullrequest ${{github.event.pull_request.base.repo.name}}:${{github.event.number}} --pulltext "${{github.event.pull_request.body}}" pull${{github.event.pull_request.number}}
           echo "::endgroup::"
+          echo "::group::Start servers"
+          bin/pulls.py test startServers
+          echo "::endgroup::"
           echo "::group::dependencies local: Update in package.json to use pull request rather than github main branch"
           bin/pulls.py  ${{steps.init.outputs.owner}} dependencies local
           echo "::endgroup::"
@@ -53,6 +57,9 @@ jobs:
           echo "::endgroup::"
           echo "::group::Testorwait: Execute Test cases (wait or test has been checked in the init step)"
           bin/pulls.py ${{steps.init.outputs.owner}} testorwait ${{github.event.pull_request.base.repo.name}}:${{github.event.number}} "${{github.event.pull_request.body}}"  >> "$GITHUB_OUTPUT"
+          echo "::endgroup::"
+          echo "::group::killServers"
+          bin/pulls.py test killServers
           echo "::endgroup::"
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
