@@ -62,7 +62,7 @@ jobs:
           echo "::group::Start servers"
           bin/pulls.py ${{steps.init.outputs.owner}} test startServers
           echo "::endgroup::"
-          bin/pulls.py ${{steps.init.outputs.owner}} test test"
+          bin/pulls.py ${{steps.init.outputs.owner}} test test
           echo "::group::killServers"
           bin/pulls.py ${{steps.init.outputs.owner}} test killServers
           echo "::endgroup::"
