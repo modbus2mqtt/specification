@@ -38,12 +38,12 @@ jobs:
           fi
           echo "owner=$owner" >> "$GITHUB_OUTPUT"
           sudo chmod 777 /var/lib/nginx
-          bin/pulls.py $owner testorwait --noexec ${{github.event.pull_request.base.repo.name}}:${{github.event.number}} "${{github.event.pull_request.body}}"  >> "$GITHUB_OUTPUT"
+          bin/pulls.py $owner execorwait --noexec ${{github.event.pull_request.base.repo.name}}:${{github.event.number}} "${{github.event.pull_request.body}}" pullaction >> "$GITHUB_OUTPUT"
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       - name: Execute all tests
         id: execute
-        if: steps.init.outputs.type== 'testrunner'
+        if: steps.init.outputs.type== 'runner'
         run: |
           echo "::group::Init Repositories"
           bin/pulls.py   ${{steps.init.outputs.owner}} init -b main 
