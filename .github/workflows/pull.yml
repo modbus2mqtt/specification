@@ -44,7 +44,7 @@ jobs:
       - name: Execute all tests
         id: execute
         if: steps.init.outputs.type== 'testrunner'
-        run: | 
+        run: |
           echo "::group::Init Repositories"
           bin/pulls.py   ${{steps.init.outputs.owner}} init -b main 
           echo "::endgroup::"
@@ -60,14 +60,9 @@ jobs:
           echo "::group::Start servers"
           bin/pulls.py ${{steps.init.outputs.owner}} test startServers
           echo "::endgroup::"
-          bin/pulls.py ${{steps.init.outputs.owner}} test test"
+          bin/pulls.py ${{steps.init.outputs.owner}} test test
           echo "::group::killServers"
           bin/pulls.py ${{steps.init.outputs.owner}} test killServers
           echo "::endgroup::"
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-
-
-       
-      
