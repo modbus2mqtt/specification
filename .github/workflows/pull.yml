@@ -60,7 +60,7 @@ jobs:
           echo "::group::Start servers"
           bin/pulls.py ${{steps.init.outputs.owner}} test startServers
           echo "::endgroup::"
-          bin/pulls.py ${{steps.init.outputs.owner}} testorwait ${{github.event.pull_request.base.repo.name}}:${{github.event.number}} "${{github.event.pull_request.body}}"
+          bin/pulls.py ${{steps.init.outputs.owner}} test test"
           echo "::group::killServers"
           bin/pulls.py ${{steps.init.outputs.owner}} test killServers
           echo "::endgroup::"
