@@ -1,0 +1,8 @@
+name: Update Changes
+on:
+  push:
+jobs:
+  release:
+    uses: modbus2mqtt/specification.shared/.github/workflows/changes.yml@main
+    permissions:
+      contents: write
