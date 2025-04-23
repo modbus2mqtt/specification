@@ -12,17 +12,17 @@ import {
   getSpecificationI18nName,
   newSpecification,
 } from '@modbus2mqtt/specification.shared'
-import { IReadRegisterResultOrError } from '../src/m2mspecification'
+import { IModbusResultOrError } from '../src/m2mspecification'
 import { ImodbusValues } from '../src/m2mspecification'
 import { trace } from 'console'
 
 ConfigSpecification['yamlDir'] = yamlDir
 ConfigSpecification.setMqttdiscoverylanguage('en')
 let testdata: ImodbusValues = {
-  coils: new Map<number, IReadRegisterResultOrError>(),
-  discreteInputs: new Map<number, IReadRegisterResultOrError>(),
-  holdingRegisters: new Map<number, IReadRegisterResultOrError>(),
-  analogInputs: new Map<number, IReadRegisterResultOrError>(),
+  coils: new Map<number, IModbusResultOrError>(),
+  discreteInputs: new Map<number, IModbusResultOrError>(),
+  holdingRegisters: new Map<number, IModbusResultOrError>(),
+  analogInputs: new Map<number, IModbusResultOrError>(),
 }
 
 it('check device type status', () => {

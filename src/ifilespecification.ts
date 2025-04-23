@@ -1,5 +1,5 @@
 import { Ispecification } from '@modbus2mqtt/specification.shared'
-import { IReadRegisterResultOrError } from './m2mspecification'
+import { IModbusResultOrError } from './m2mspecification'
 export interface Idata {
   address: number
   value?: number

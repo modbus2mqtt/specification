@@ -8,34 +8,39 @@ export class NumberConverter extends Converter {
     if (!component) component = 'number'
     super(component)
   }
-  modbus2mqtt(spec: Ispecification, entityid: number, value: ReadRegisterResult): number | string {
+  modbus2mqtt(spec: Ispecification, entityid: number, value: number[]): number | string {
     let entity = spec.entities.find((e) => e.id == entityid)
     let mspec = new M2mSpecification(spec.entities as ImodbusEntity[])
     if (entity) {
-      if (value.data.length == 0) throw new Error('NumberConverter.modbus2mqtt: No value in array')
+      if (value.length == 0) throw new Error('NumberConverter.modbus2mqtt: No value in array')
 
       let numberFormat =
         entity.converterParameters != undefined && (entity.converterParameters as Inumber).numberFormat != undefined
           ? (entity.converterParameters as Inumber).numberFormat
           : EnumNumberFormat.default
 
-      let v = value.data[0]
+      let v = value[0]
+      let buffer16 = Buffer.allocUnsafe(4)
+      let buffer32 = Buffer.allocUnsafe(4)
       switch (numberFormat) {
         case EnumNumberFormat.float32:
-          if (value.buffer && value.buffer.length >= 4) v = value.buffer.readFloatBE()
-          else new Error('NumberConverter.modbus2mqtt: Invalid buffer to convert to Float entityid = ' + entityid)
+          buffer32.writeUInt16BE(value[0])
+          buffer32.writeUInt16BE(value[1], 2)
+          v = buffer32.readFloatBE()
           break
         case EnumNumberFormat.signedInt16:
-          if (value.buffer && value.buffer.length >= 2) v = value.buffer.readInt16BE()
-          else new Error('NumberConverter.modbus2mqtt: Invalid buffer to convert to Signed16 int entityid = ' + entityid)
+          buffer16.writeUInt16BE(value[0])
+          v = buffer16.readInt16BE()
           break
         case EnumNumberFormat.unsignedInt32:
-          if (value.buffer && value.buffer.length >= 4) v = value.buffer.readUint32BE()
-          else new Error('NumberConverter.modbus2mqtt: Invalid buffer to convert to Unsigned32 entityid = ' + entityid)
+          buffer32.writeUInt16BE(value[0])
+          buffer32.writeUInt16BE(value[1], 2)
+          v = buffer32.readUint32BE()
           break
         case EnumNumberFormat.signedInt32:
-          if (value.buffer && value.buffer.length >= 4) v = value.buffer.readInt32BE()
-          else new Error('NumberConverter.modbus2mqtt: Invalid buffer to convert to Signed32 entityid = ' + entityid)
+          buffer32.writeUInt16BE(value[0])
+          buffer32.writeUInt16BE(value[1], 2)
+          v = buffer32.readInt32BE()
           break
       }
       let multiplier = mspec.getMultiplier(entityid)
@@ -50,7 +55,7 @@ export class NumberConverter extends Converter {
     } else throw new Error('entityid not found in entities')
   }
 
-  override mqtt2modbus(spec: Ispecification, entityid: number, value: number | string): ReadRegisterResult {
+  override mqtt2modbus(spec: Ispecification, entityid: number, value: number | string): number[] {
     let mspec = new M2mSpecification(spec.entities as ImodbusEntity[])
     let multiplier = mspec.getMultiplier(entityid)
     let offset = mspec.getOffset(entityid)
@@ -70,28 +75,19 @@ export class NumberConverter extends Converter {
       switch (numberFormat) {
         case EnumNumberFormat.float32:
           buf.writeFloatBE(v)
-          break
+          return [buf.readUInt16BE(0), buf.readUInt16BE(2)]
         case EnumNumberFormat.signedInt16:
           buf.writeInt16BE(v)
-          v = buf.readUInt16BE()
-          break
+          return [buf.readUInt16BE()]
         case EnumNumberFormat.unsignedInt32:
           buf.writeUint32BE(v)
-          v = buf.readUint32BE()
-          break
+          return [buf.readUInt16BE(0), buf.readUInt16BE(2)]
         case EnumNumberFormat.signedInt32:
           buf.writeInt32BE(v)
-          v = buf.readInt32BE()
-          break
+          return [buf.readUInt16BE(0), buf.readUInt16BE(2)]
         default:
-          buf = Buffer.allocUnsafe(2)
-          buf.writeUInt16BE(v)
+          return [v]
       }
-      let r: ReadRegisterResult = {
-        data: [v],
-        buffer: buf,
-      }
-      return r
     }
     throw new Error('entityid not found in entities')
   }

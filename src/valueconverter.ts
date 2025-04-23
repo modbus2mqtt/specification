@@ -2,7 +2,7 @@ import { Converter, ReadRegisterResult } from './converter'
 import { Converters, Ispecification, Ivalue, ModbusRegisterType } from '@modbus2mqtt/specification.shared'
 
 export class ValueConverter extends Converter {
-  override mqtt2modbus(spec: Ispecification, entityid: number, _value: string | number): ReadRegisterResult {
+  override mqtt2modbus(spec: Ispecification, entityid: number, _value: string | number): number[] {
     throw new Error('fixed value has no modbus value.')
   }
   override getModbusRegisterTypes(): ModbusRegisterType[] {
