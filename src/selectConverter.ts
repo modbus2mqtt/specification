@@ -42,16 +42,16 @@ export class SelectConverter extends Converter {
   override publishModbusValues(): boolean {
     return true
   }
-  override modbus2mqtt(spec: Ispecification, entityid: number, value: ReadRegisterResult): number | string {
+  override modbus2mqtt(spec: Ispecification, entityid: number, value: number[]): number | string {
     let entity = spec.entities.find((e) => e.id == entityid)
     var msg = ''
     if (entity) {
       let opts: IselectOption[] | undefined = (entity.converterParameters as Iselect).options
       if (opts && opts.length > 0) {
-        let opt = (entity.converterParameters as Iselect)!.options!.find((opt) => opt.key == value.data[0])
+        let opt = (entity.converterParameters as Iselect)!.options!.find((opt) => opt.key == value[0])
         return opt && opt.name ? opt.name : ''
       } else {
-        var rc = getSpecificationI18nEntityOptionName(spec, ConfigSpecification.mqttdiscoverylanguage!, entityid, value.data[0])
+        var rc = getSpecificationI18nEntityOptionName(spec, ConfigSpecification.mqttdiscoverylanguage!, entityid, value[0])
         if (rc) return rc
       }
       let options = this.getOptions(spec, entityid)
@@ -61,38 +61,28 @@ export class SelectConverter extends Converter {
         ' entity id: "' +
         entity.id +
         '" key:' +
-        value.data[0] +
+        value[0] +
         ' options: ' +
         JSON.stringify(options)
-    } else msg = 'entityid not in entities list: "' + entityid + '" key:' + value.data[0]
+    } else msg = 'entityid not in entities list: "' + entityid + '" key:' + value[0]
     return msg
   }
-  override mqtt2modbus(spec: Ispecification, entityid: number, name: string): ReadRegisterResult {
+  override mqtt2modbus(spec: Ispecification, entityid: number, name: string): number[] {
     let entity = spec.entities.find((e) => e.id == entityid)
     if (!entity) throw new Error('entity not found in entities')
 
-    if (this.component === 'binary')
-      return {
-        data: [],
-        buffer: Buffer.from(''),
-      }
+    if (this.component === 'binary') return []
     let val = getSpecificationI18nEntityOptionId(spec, ConfigSpecification.mqttdiscoverylanguage!, entityid, name)
     if (val) {
       let buf = Buffer.alloc(2)
       buf.writeInt16BE(val[0])
-      return {
-        data: val,
-        buffer: buf,
-      }
+      return val
     }
 
     let options = this.getOptions(spec, entityid)
     var msg = 'unknown option  entity id: ' + entity.id + '(assuming: name = 0)' + name + 'options: ' + options
     log.log(LogLevelEnum.error, msg)
-    return {
-      data: [],
-      buffer: Buffer.from(''),
-    }
+    return []
   }
   override getParameterType(_entity: Ientity): string | undefined {
     switch (this.component) {
