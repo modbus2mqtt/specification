@@ -549,9 +549,6 @@ export class M2mSpecification implements IspecificationValidator {
               rc.mqttValue = ''
               rc.modbusValue = []
             }
-            if (error != undefined) {
-              rc.modbusError = error?.message
-            }
           } catch (error) {
             log.log(LogLevelEnum.error, error)
           }
