@@ -280,29 +280,25 @@ export class ConfigSpecification {
             case ModbusRegisterType.AnalogInputs:
               fileSpec.testdata.analogInputs?.push({
                 address: entity.modbusAddress + idx,
-                value: entity.modbusValue[idx],
-                error: entity.modbusError,
+                value: entity.modbusValue[idx]
               })
               break
             case ModbusRegisterType.HoldingRegister:
               fileSpec.testdata.holdingRegisters?.push({
                 address: entity.modbusAddress + idx,
-                value: entity.modbusValue[idx],
-                error: entity.modbusError,
+                value: entity.modbusValue[idx]
               })
               break
             case ModbusRegisterType.Coils:
               fileSpec.testdata.coils?.push({
                 address: entity.modbusAddress + idx,
-                value: entity.modbusValue[idx],
-                error: entity.modbusError,
+                value: entity.modbusValue[idx]
               })
               break
             case ModbusRegisterType.DiscreteInputs:
               fileSpec.testdata.discreteInputs?.push({
                 address: entity.modbusAddress + idx,
-                value: entity.modbusValue[idx],
-                error: entity.modbusError,
+                value: entity.modbusValue[idx]
               })
               break
           }
