@@ -4,5 +4,7 @@ on:
 jobs:
   release:
     uses: modbus2mqtt/specification.shared/.github/workflows/changes.yml@main
+    with:
+      dependencies: "@modbus2mqtt/specification.shared"
     permissions:
       contents: write
