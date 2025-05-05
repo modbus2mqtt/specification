@@ -40,7 +40,7 @@ var entText: ImodbusEntity = {
   mqttValue: '',
   identified: IdentifiedStates.unknown,
   converterParameters: { stringlength: 10 },
-  converter: { name: 'text', registerTypes: [] },
+  converter: 'text',
 }
 
 let spec: IfileSpecification = {
@@ -48,7 +48,7 @@ let spec: IfileSpecification = {
     {
       id: 1,
       mqttname: 'mqtt',
-      converter: { name: 'number' as Converters, registerTypes: [] },
+      converter: 'number' as Converters,
       modbusAddress: 3,
       registerType: ModbusRegisterType.HoldingRegister,
       readonly: true,
@@ -58,7 +58,7 @@ let spec: IfileSpecification = {
     {
       id: 2,
       mqttname: 'mqtt2',
-      converter: { name: 'select' as Converters, registerTypes: [] },
+      converter: 'select' as Converters,
       modbusAddress: 4,
       registerType: ModbusRegisterType.HoldingRegister,
       readonly: true,
@@ -68,7 +68,7 @@ let spec: IfileSpecification = {
     {
       id: 3,
       mqttname: 'mqtt3',
-      converter: { name: 'select' as Converters, registerTypes: [] },
+      converter: 'select' as Converters,
       modbusAddress: 5,
       registerType: ModbusRegisterType.HoldingRegister,
       readonly: false,
