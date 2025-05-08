@@ -165,9 +165,7 @@ export class ConfigSpecification {
           o.filename = newfn
           this.readFilesYaml(directory, o)
           o.entities.forEach((entity) => {
-            let cv = ConverterMap.getIConverter(entity)
-            if (cv) {
-              entity.converter = cv
+            if (entity.converter != undefined) {
               let inumber = entity.converterParameters as Inumber
               if (inumber.multiplier != undefined && inumber.numberFormat == undefined) {
                 inumber.numberFormat = EnumNumberFormat.default
@@ -302,8 +300,7 @@ export class ConfigSpecification {
               })
               break
           }
-          entity.converter.registerTypes = []
-        }
+         }
     })
     if (fileSpec.testdata.analogInputs?.length == 0) delete fileSpec.testdata.analogInputs
     if (fileSpec.testdata.holdingRegisters?.length == 0) delete fileSpec.testdata.holdingRegisters
@@ -561,7 +558,10 @@ export class ConfigSpecification {
     delete (spec as any).identified
   }
 
-  static getSpecificationByFilename(filename: string): IfileSpecification | undefined {
+  static getSpecificationByFilename(filename: string|undefined): IfileSpecification | undefined {
+    if (filename == undefined) 
+      return undefined
+  
     if (filename == '_new') {
       let rc: IfileSpecification = {
         version: SPECIFICATION_VERSION,

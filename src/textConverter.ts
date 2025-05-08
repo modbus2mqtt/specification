@@ -17,7 +17,7 @@ export class TextConverter extends Converter {
   }
   override modbus2mqtt(spec: Ispecification, entityid: number, value: number[]): number | string {
     let entity = spec.entities.find((e) => e.id == entityid)
-    if (entity && entity.converter.name === 'value' && entity.converterParameters && (entity.converterParameters as Ivalue).value)
+    if (entity && entity.converter === 'value' && entity.converterParameters && (entity.converterParameters as Ivalue).value)
       return (entity.converterParameters as Ivalue).value
     let cvP = entity?.converterParameters as Itext
     let buffer = Buffer.allocUnsafe(cvP.stringlength * 2)

@@ -3,7 +3,7 @@ import { cleanConverterParameters, removeModbusData } from '@modbus2mqtt/specifi
 
 var entity: any = {
   name: 'test',
-  converter: { name: 'number', functionCodes: [] },
+  converter: 'number',
   modbusValue: [3, 4, 5],
   mqttValue: 3,
   converterParameters: { uom: 'kW', multiplier: 1, tobeRemoved: 'tobeREmoved' },

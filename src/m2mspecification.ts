@@ -509,7 +509,7 @@ export class M2mSpecification implements IspecificationValidator {
               let mqtt = converter.modbus2mqtt(spec, entity.id, data)
               let identified = IdentifiedStates.unknown
               if (entity.converterParameters)
-                if (entity.converter.name === 'number') {
+                if (entity.converter === 'number') {
                   if (!(entity.converterParameters as Inumber).identification)
                     (entity as ImodbusEntity).identified = IdentifiedStates.unknown
                   else {
@@ -559,7 +559,7 @@ export class M2mSpecification implements IspecificationValidator {
       } else
         log.log(
           LogLevelEnum.error,
-          'Converter not found: ' + spec.filename + ' ' + entity.converter.name + ' entity id: ' + +entity.id
+          'Converter not found: ' + spec.filename + ' ' + entity.converter + ' entity id: ' + +entity.id
         )
 
       return rc
@@ -728,7 +728,7 @@ export class M2mSpecification implements IspecificationValidator {
           additionalInformation: getSpecificationI18nEntityName(other, 'en', oent.id),
         })
       else {
-        if (!this.isEqualValue(oent.converter.name, ent.converter.name))
+        if (!this.isEqualValue(oent.converter, ent.converter))
           rc.push({ type: MessageTypes.differentConverter, category: MessageCategories.compareEntity, referencedEntity: ent.id })
         if (!this.isEqualValue(oent.modbusAddress, ent.modbusAddress))
           rc.push({
