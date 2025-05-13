@@ -9,7 +9,7 @@ let spec: Ispecification = {
     {
       id: 1,
       mqttname: 'mqtt',
-      converter: { name: 'number' as Converters, registerTypes: [] },
+      converter: 'number' as Converters,
       modbusAddress: 4,
       registerType: ModbusRegisterType.HoldingRegister,
       readonly: true,
@@ -19,7 +19,7 @@ let spec: Ispecification = {
     {
       id: 2,
       mqttname: 'mqtt2',
-      converter: { name: 'select_sensor' as Converters, registerTypes: [] },
+      converter: 'select_sensor' as Converters,
       modbusAddress: 2,
       registerType: ModbusRegisterType.HoldingRegister,
       readonly: true,
@@ -29,7 +29,7 @@ let spec: Ispecification = {
     {
       id: 3,
       mqttname: 'mqtt3',
-      converter: { name: 'select_sensor' as Converters, registerTypes: [] },
+      converter: 'select_sensor' as Converters,
       modbusAddress: 3,
       registerType: ModbusRegisterType.HoldingRegister,
       readonly: true,
@@ -58,7 +58,7 @@ it('test sensor converter', () => {
   let entity: Ientity = {
     id: 1,
     mqttname: 'mqtt',
-    converter: { name: 'number', registerTypes: [] },
+    converter: 'number',
     converterParameters: { multiplier: 0.01, offset: 0 },
     registerType: ModbusRegisterType.HoldingRegister,
     readonly: false,
@@ -73,7 +73,7 @@ it('test sensor converter with stringlength', () => {
   let entity: Ientity = {
     id: 1,
     mqttname: 'mqtt',
-    converter: { name: 'number', registerTypes: [] },
+    converter: 'number',
     converterParameters: { stringlength: 10 },
     registerType: ModbusRegisterType.HoldingRegister,
     readonly: false,
@@ -89,7 +89,7 @@ it('test binary_sensor converter', () => {
   let entity: Ientity = {
     id: 1,
     mqttname: 'mqtt',
-    converter: { name: 'binary', registerTypes: [] },
+    converter: 'binary',
     registerType: ModbusRegisterType.HoldingRegister,
     readonly: false,
     modbusAddress: 2,
@@ -103,7 +103,7 @@ it('test binary_sensor converter', () => {
   entity = {
     id: 1,
     mqttname: 'mqtt',
-    converter: { name: 'binary', registerTypes: [] },
+    converter: 'binary',
     converterParameters: { optionModbusValues: [0, 1] },
     registerType: ModbusRegisterType.HoldingRegister,
     readonly: false,
@@ -117,7 +117,7 @@ it('test select_sensor converter', () => {
   let entity: Ientity = {
     id: 1,
     mqttname: 'mqtt',
-    converter: { name: 'select', registerTypes: [] },
+    converter: 'select',
     converterParameters: { optionModbusValues: [1, 2] },
     registerType: ModbusRegisterType.HoldingRegister,
     readonly: false,
@@ -132,7 +132,7 @@ it('test select_sensor converter', () => {
   entity = {
     id: 1,
     mqttname: 'mqtt',
-    converter: { name: 'select', registerTypes: [] },
+    converter: 'select',
     converterParameters: { optionModbusValues: [0, 1] },
     registerType: ModbusRegisterType.HoldingRegister,
     readonly: false,
@@ -147,7 +147,7 @@ it('test text_sensor converter', () => {
   let entity: Ientity = {
     id: 1,
     mqttname: 'mqtt',
-    converter: { name: 'text', registerTypes: [] },
+    converter: 'text',
     converterParameters: { stringlength: 10 },
     registerType: ModbusRegisterType.HoldingRegister,
     readonly: false,
@@ -167,7 +167,7 @@ it('test value_sensor converter', () => {
   let entity: Ientity = {
     id: 1,
     mqttname: 'mqtt',
-    converter: { name: 'value', registerTypes: [] },
+    converter: 'value',
     converterParameters: { value: 'testValue' },
     registerType: ModbusRegisterType.HoldingRegister,
     readonly: false,
@@ -183,7 +183,7 @@ it('test text converter', () => {
   let entity: Ientity = {
     id: 1,
     mqttname: 'mqtt',
-    converter: { name: 'text', registerTypes: [] },
+    converter: 'text',
     converterParameters: { stringlength: 10 },
     registerType: ModbusRegisterType.HoldingRegister,
     readonly: false,
@@ -203,7 +203,7 @@ it('test number converter ignore decimal places when returning float', () => {
   let entity: Ientity = {
     id: 1,
     mqttname: 'mqtt',
-    converter: { name: 'number', registerTypes: [] },
+    converter: 'number',
     converterParameters: { multiplier: 0.01, offset: 0, decimals: 1 },
     registerType: ModbusRegisterType.HoldingRegister,
     readonly: false,
@@ -220,7 +220,7 @@ it('test number converter ignore decimal places when returning float', () => {
   entity = {
     id: 1,
     mqttname: 'mqtt',
-    converter: { name: 'number', registerTypes: [] },
+    converter: 'number',
     converterParameters: { multiplier: 0.01, offset: 20 },
     registerType: ModbusRegisterType.HoldingRegister,
     readonly: false,
@@ -234,7 +234,7 @@ it('test number float', () => {
   let entity: Ientity = {
     id: 1,
     mqttname: 'mqtt',
-    converter: { name: 'number', registerTypes: [] },
+    converter: 'number',
     converterParameters: { multiplier: 1, offset: 0, numberFormat: EnumNumberFormat.float32 },
     registerType: ModbusRegisterType.HoldingRegister,
     readonly: false,
@@ -253,7 +253,7 @@ it('test number signed int16', () => {
   let entity: Ientity = {
     id: 1,
     mqttname: 'mqtt',
-    converter: { name: 'number', registerTypes: [] },
+    converter: 'number',
     converterParameters: { multiplier: 1, offset: 0, numberFormat: EnumNumberFormat.signedInt16 },
     registerType: ModbusRegisterType.HoldingRegister,
     readonly: false,
@@ -271,7 +271,7 @@ it('test number signed int32 - positive', () => {
   let entity: Ientity = {
     id: 1,
     mqttname: 'mqtt',
-    converter: { name: 'number', registerTypes: [] },
+    converter: 'number',
     converterParameters: { multiplier: 1, offset: 0, numberFormat: EnumNumberFormat.signedInt32 },
     registerType: ModbusRegisterType.HoldingRegister,
     readonly: false,
@@ -290,7 +290,7 @@ it('test number signed int32 - positive max', () => {
   let entity: Ientity = {
     id: 1,
     mqttname: 'mqtt',
-    converter: { name: 'number', registerTypes: [] },
+    converter: 'number',
     converterParameters: { multiplier: 1, offset: 0, numberFormat: EnumNumberFormat.signedInt32 },
     registerType: ModbusRegisterType.HoldingRegister,
     readonly: false,
@@ -309,7 +309,7 @@ it('test number signed int32 - negative', () => {
   let entity: Ientity = {
     id: 1,
     mqttname: 'mqtt',
-    converter: { name: 'number', registerTypes: [] },
+    converter: 'number',
     converterParameters: { multiplier: 1, offset: 0, numberFormat: EnumNumberFormat.signedInt32 },
     registerType: ModbusRegisterType.HoldingRegister,
     readonly: false,
@@ -329,7 +329,7 @@ it('test number unsigned int32 - max', () => {
   let entity: Ientity = {
     id: 1,
     mqttname: 'mqtt',
-    converter: { name: 'number', registerTypes: [] },
+    converter: 'number',
     converterParameters: { multiplier: 1, offset: 0, numberFormat: EnumNumberFormat.unsignedInt32 },
     registerType: ModbusRegisterType.HoldingRegister,
     readonly: false,
@@ -349,7 +349,7 @@ it('test select converter', () => {
   let entity: Ientity = {
     id: 1,
     mqttname: 'mqtt',
-    converter: { name: 'select', registerTypes: [] },
+    converter: 'select',
     converterParameters: { optionModbusValues: [1, 2] },
     registerType: ModbusRegisterType.HoldingRegister,
     readonly: false,
@@ -362,7 +362,7 @@ it('test select converter', () => {
   entity = {
     id: 1,
     mqttname: 'mqtt',
-    converter: { name: 'select', registerTypes: [] },
+    converter: 'select',
     converterParameters: { optionModbusValues: [1, 2] },
     registerType: ModbusRegisterType.HoldingRegister,
     readonly: false,
@@ -375,7 +375,7 @@ it('test button converter', () => {
   let entity: Ientity = {
     id: 1,
     mqttname: 'mqtt',
-    converter: { name: 'binary', registerTypes: [] },
+    converter: 'binary',
     registerType: ModbusRegisterType.HoldingRegister,
     readonly: false,
     modbusAddress: 2,
