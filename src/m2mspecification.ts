@@ -557,10 +557,7 @@ export class M2mSpecification implements IspecificationValidator {
           // It remains an Ientity
         }
       } else
-        log.log(
-          LogLevelEnum.error,
-          'Converter not found: ' + spec.filename + ' ' + entity.converter + ' entity id: ' + +entity.id
-        )
+        log.log(LogLevelEnum.error, 'Converter not found: ' + spec.filename + ' ' + entity.converter + ' entity id: ' + +entity.id)
 
       return rc
     } else {

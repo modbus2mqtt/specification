@@ -126,7 +126,7 @@ describe('simple tests', () => {
     tspec.entities = [entText]
     let values: ImodbusValues = emptyModbusValues()
     if (entText.converterParameters) (entText.converterParameters as Itext).identification = 'ABCD'
-    let v:number[] = [(65 << 8) | 66, (67 << 8) | 68]
+    let v: number[] = [(65 << 8) | 66, (67 << 8) | 68]
     values.holdingRegisters.set(5, { data: [v[0]] })
     values.holdingRegisters.set(6, { data: [v[1]] })
 
