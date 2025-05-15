@@ -46,8 +46,8 @@ export class Migrator {
           filecontent = this.migrate0_2to0_3(filecontent)
           break
         case '0.3':
-            filecontent = this.migrate0_3to0_4(filecontent)
-        break
+          filecontent = this.migrate0_3to0_4(filecontent)
+          break
         case SPECIFICATION_VERSION:
           return filecontent
         default:
@@ -180,8 +180,7 @@ export class Migrator {
   }
   migrate0_3to0_4(filecontent: any): IfileSpecification {
     filecontent.version = '0.4'
-    if (filecontent.entities) 
-      filecontent.entities.forEach((e:any)=>e.converter = e.converter.name )
+    if (filecontent.entities) filecontent.entities.forEach((e: any) => (e.converter = e.converter.name))
     return filecontent
   }
   getConvertername0_1(converter: string): string {

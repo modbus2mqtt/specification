@@ -278,29 +278,29 @@ export class ConfigSpecification {
             case ModbusRegisterType.AnalogInputs:
               fileSpec.testdata.analogInputs?.push({
                 address: entity.modbusAddress + idx,
-                value: entity.modbusValue[idx]
+                value: entity.modbusValue[idx],
               })
               break
             case ModbusRegisterType.HoldingRegister:
               fileSpec.testdata.holdingRegisters?.push({
                 address: entity.modbusAddress + idx,
-                value: entity.modbusValue[idx]
+                value: entity.modbusValue[idx],
               })
               break
             case ModbusRegisterType.Coils:
               fileSpec.testdata.coils?.push({
                 address: entity.modbusAddress + idx,
-                value: entity.modbusValue[idx]
+                value: entity.modbusValue[idx],
               })
               break
             case ModbusRegisterType.DiscreteInputs:
               fileSpec.testdata.discreteInputs?.push({
                 address: entity.modbusAddress + idx,
-                value: entity.modbusValue[idx]
+                value: entity.modbusValue[idx],
               })
               break
           }
-         }
+        }
     })
     if (fileSpec.testdata.analogInputs?.length == 0) delete fileSpec.testdata.analogInputs
     if (fileSpec.testdata.holdingRegisters?.length == 0) delete fileSpec.testdata.holdingRegisters
@@ -558,10 +558,9 @@ export class ConfigSpecification {
     delete (spec as any).identified
   }
 
-  static getSpecificationByFilename(filename: string|undefined): IfileSpecification | undefined {
-    if (filename == undefined) 
-      return undefined
-  
+  static getSpecificationByFilename(filename: string | undefined): IfileSpecification | undefined {
+    if (filename == undefined) return undefined
+
     if (filename == '_new') {
       let rc: IfileSpecification = {
         version: SPECIFICATION_VERSION,
