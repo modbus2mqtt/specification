@@ -1,7 +1,25 @@
 # Changelog for specification
 
+## [Unreleased](https://github.com/modbus2mqtt/specification/tree/HEAD)
+
+[Full Changelog](https://github.com/modbus2mqtt/specification/compare/v0.15.29...HEAD)
+
+**Merged pull requests:**
+
+- \[Feature\] Add number of processed calls to Modbus Status [\#11](https://github.com/modbus2mqtt/specification/pull/11) ([volkmarnissen](https://github.com/volkmarnissen))
+- \[Feature\] Add number of processed calls to Modbus Status [\#10](https://github.com/modbus2mqtt/specification/pull/10) ([volkmarnissen](https://github.com/volkmarnissen))
+- \[bug\]Modbus Error Handling, Slave Specification Detection, TCP RTU bridge, Fixes [\#9](https://github.com/modbus2mqtt/specification/pull/9) ([volkmarnissen](https://github.com/volkmarnissen))
+- \[bug\]Modbus Error Handling, Slave Specification Detection, TCP RTU bridge, Fixes [\#8](https://github.com/modbus2mqtt/specification/pull/8) ([volkmarnissen](https://github.com/volkmarnissen))
+- \[bug\]Modbus Error Handling, Slave Specification Detection, TCP RTU bridge, Fixes [\#7](https://github.com/modbus2mqtt/specification/pull/7) ([volkmarnissen](https://github.com/volkmarnissen))
+- \[bug\]Modbus Error Handling, Slave Specification Detection, TCP RTU bridge, Fixes [\#6](https://github.com/modbus2mqtt/specification/pull/6) ([volkmarnissen](https://github.com/volkmarnissen))
+- Modbus Error Handling and Monitoring [\#5](https://github.com/modbus2mqtt/specification/pull/5) ([volkmarnissen](https://github.com/volkmarnissen))
+- Fix Modbuscache, Add caching for modbusRTU [\#4](https://github.com/modbus2mqtt/specification/pull/4) ([volkmarnissen](https://github.com/volkmarnissen))
+
 ## [v0.15.29](https://github.com/modbus2mqtt/specification/tree/v0.15.29) (2025-04-14)
 
+[Full Changelog](https://github.com/modbus2mqtt/specification/compare/v0.15.28...v0.15.29)
+
+**Merged pull requests:**
 
 - Infrastructure fixes [\#3](https://github.com/modbus2mqtt/specification/pull/3) ([volkmarnissen](https://github.com/volkmarnissen))
 - Adding discrete inputs to data structures [\#2](https://github.com/modbus2mqtt/specification/pull/2) ([arturmietek](https://github.com/arturmietek))
