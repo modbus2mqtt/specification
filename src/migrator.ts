@@ -1,7 +1,9 @@
 import { IModbusData, Idata, IfileSpecification } from './ifilespecification'
 import {
   FileLocation,
+  Ientity,
   IimageAndDocumentUrl,
+  Ispecification,
   ModbusRegisterType,
   SPECIFICATION_FILES_VERSION,
   SPECIFICATION_VERSION,
@@ -42,6 +44,9 @@ export class Migrator {
           break
         case '0.2':
           filecontent = this.migrate0_2to0_3(filecontent)
+          break
+        case '0.3':
+          filecontent = this.migrate0_3to0_4(filecontent)
           break
         case SPECIFICATION_VERSION:
           return filecontent
@@ -173,7 +178,11 @@ export class Migrator {
     }
     return filecontent
   }
-
+  migrate0_3to0_4(filecontent: any): IfileSpecification {
+    filecontent.version = '0.4'
+    if (filecontent.entities) filecontent.entities.forEach((e: any) => (e.converter = e.converter.name))
+    return filecontent
+  }
   getConvertername0_1(converter: string): string {
     switch (converter) {
       case 'sensor':

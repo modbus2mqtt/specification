@@ -418,96 +418,98 @@ export class M2mGitHub {
                 let all: Promise<ITreeParam>[]
                 try {
                   let all = this.checkFiles(root, files)
-                } catch (e) {
+
+                  Promise.all(all!)
+                    .then((trees) => {
+                      debug('get Branch')
+                      this.octokit!.git.getRef({
+                        owner: this.ownOwner!,
+                        repo: githubPublicNames.modbus2mqttRepo,
+                        ref: 'heads/' + githubPublicNames.modbus2mqttBranch,
+                      })
+                        .then((ref) => {
+                          let sha = ref.data.object.sha
+                          // create a new branch
+                          this.octokit!.git.createRef({
+                            owner: this.ownOwner!,
+                            repo: githubPublicNames.modbus2mqttRepo,
+                            ref: 'refs/heads/' + branchName,
+                            sha: ref.data.object.sha,
+                          })
+                            .then((branch) => {
+                              branch.data.object.sha
+                              //this.octokit.git.getTree()
+                              this.octokit!.request(
+                                `GET /repos/${this.ownOwner}/${githubPublicNames.modbus2mqttRepo}/git/trees/${githubPublicNames.modbus2mqttBranch}`
+                              )
+                                .then((tree) => {
+                                  debug('createTree')
+                                  this.octokit!.git.createTree({
+                                    owner: this.ownOwner!,
+                                    repo: githubPublicNames.modbus2mqttRepo,
+                                    tree: trees,
+                                    base_tree: tree.data.sha,
+                                  })
+                                    .then((result) => {
+                                      debug('createCommit')
+                                      this.octokit!.git.createCommit({
+                                        owner: this.ownOwner!,
+                                        repo: githubPublicNames.modbus2mqttRepo,
+                                        message: title + '\n' + message,
+                                        tree: result.data.sha,
+                                        parents: [branch.data.object.sha],
+                                      })
+                                        .then((_result) => {
+                                          debug('updateRef')
+                                          this.octokit!.git.updateRef({
+                                            owner: this.ownOwner!,
+                                            repo: githubPublicNames.modbus2mqttRepo,
+                                            ref: 'heads/' + branchName,
+                                            sha: _result.data.sha,
+                                          })
+                                            .then(() => {
+                                              debug('updated')
+                                              resolve(_result.data.sha)
+                                            })
+                                            .catch((e) => {
+                                              e.step = 'updateRef'
+                                              reject(e)
+                                            })
+                                        })
+                                        .catch((e) => {
+                                          e.step = 'createCommit'
+                                          reject(e)
+                                        })
+                                    })
+                                    .catch((e) => {
+                                      e.step = 'create Tree'
+                                      reject(e)
+                                    })
+                                })
+                                .catch((e) => {
+                                  e.step = 'get base tree'
+                                  reject(e)
+                                })
+                            })
+                            .catch((e) => {
+                              e.step = 'create branch'
+                              reject(e)
+                            })
+                        })
+                        .catch((e) => {
+                          e.step = 'get branch'
+                          reject(e)
+                        })
+                    })
+                    .catch((e) => {
+                      e.step = 'create blobs'
+                      reject(e)
+                    })
+                } catch (e:any) {
+                  e.step = 'waiting for all failed'
                   reject(e)
                   return
                 }
-                Promise.all(all!)
-                  .then((trees) => {
-                    debug('get Branch')
-                    this.octokit!.git.getRef({
-                      owner: this.ownOwner!,
-                      repo: githubPublicNames.modbus2mqttRepo,
-                      ref: 'heads/' + githubPublicNames.modbus2mqttBranch,
-                    })
-                      .then((ref) => {
-                        let sha = ref.data.object.sha
-                        // create a new branch
-                        this.octokit!.git.createRef({
-                          owner: this.ownOwner!,
-                          repo: githubPublicNames.modbus2mqttRepo,
-                          ref: 'refs/heads/' + branchName,
-                          sha: ref.data.object.sha,
-                        })
-                          .then((branch) => {
-                            branch.data.object.sha
-                            //this.octokit.git.getTree()
-                            this.octokit!.request(
-                              `GET /repos/${this.ownOwner}/${githubPublicNames.modbus2mqttRepo}/git/trees/${githubPublicNames.modbus2mqttBranch}`
-                            )
-                              .then((tree) => {
-                                debug('createTree')
-                                this.octokit!.git.createTree({
-                                  owner: this.ownOwner!,
-                                  repo: githubPublicNames.modbus2mqttRepo,
-                                  tree: trees,
-                                  base_tree: tree.data.sha,
-                                })
-                                  .then((result) => {
-                                    debug('createCommit')
-                                    this.octokit!.git.createCommit({
-                                      owner: this.ownOwner!,
-                                      repo: githubPublicNames.modbus2mqttRepo,
-                                      message: title + '\n' + message,
-                                      tree: result.data.sha,
-                                      parents: [branch.data.object.sha],
-                                    })
-                                      .then((_result) => {
-                                        debug('updateRef')
-                                        this.octokit!.git.updateRef({
-                                          owner: this.ownOwner!,
-                                          repo: githubPublicNames.modbus2mqttRepo,
-                                          ref: 'heads/' + branchName,
-                                          sha: _result.data.sha,
-                                        })
-                                          .then(() => {
-                                            debug('updated')
-                                            resolve(_result.data.sha)
-                                          })
-                                          .catch((e) => {
-                                            e.step = 'updateRef'
-                                            reject(e)
-                                          })
-                                      })
-                                      .catch((e) => {
-                                        e.step = 'createCommit'
-                                        reject(e)
-                                      })
-                                  })
-                                  .catch((e) => {
-                                    e.step = 'create Tree'
-                                    reject(e)
-                                  })
-                              })
-                              .catch((e) => {
-                                e.step = 'get base tree'
-                                reject(e)
-                              })
-                          })
-                          .catch((e) => {
-                            e.step = 'create branch'
-                            reject(e)
-                          })
-                      })
-                      .catch((e) => {
-                        e.step = 'get branch'
-                        reject(e)
-                      })
-                  })
-                  .catch((e) => {
-                    e.step = 'create blobs'
-                    reject(e)
-                  })
               }
             })
             .catch((e) => {

@@ -165,9 +165,7 @@ export class ConfigSpecification {
           o.filename = newfn
           this.readFilesYaml(directory, o)
           o.entities.forEach((entity) => {
-            let cv = ConverterMap.getIConverter(entity)
-            if (cv) {
-              entity.converter = cv
+            if (entity.converter != undefined) {
               let inumber = entity.converterParameters as Inumber
               if (inumber.multiplier != undefined && inumber.numberFormat == undefined) {
                 inumber.numberFormat = EnumNumberFormat.default
@@ -281,32 +279,27 @@ export class ConfigSpecification {
               fileSpec.testdata.analogInputs?.push({
                 address: entity.modbusAddress + idx,
                 value: entity.modbusValue[idx],
-                error: entity.modbusError,
               })
               break
             case ModbusRegisterType.HoldingRegister:
               fileSpec.testdata.holdingRegisters?.push({
                 address: entity.modbusAddress + idx,
                 value: entity.modbusValue[idx],
-                error: entity.modbusError,
               })
               break
             case ModbusRegisterType.Coils:
               fileSpec.testdata.coils?.push({
                 address: entity.modbusAddress + idx,
                 value: entity.modbusValue[idx],
-                error: entity.modbusError,
               })
               break
             case ModbusRegisterType.DiscreteInputs:
               fileSpec.testdata.discreteInputs?.push({
                 address: entity.modbusAddress + idx,
                 value: entity.modbusValue[idx],
-                error: entity.modbusError,
               })
               break
           }
-          entity.converter.registerTypes = []
         }
     })
     if (fileSpec.testdata.analogInputs?.length == 0) delete fileSpec.testdata.analogInputs
@@ -565,7 +558,9 @@ export class ConfigSpecification {
     delete (spec as any).identified
   }
 
-  static getSpecificationByFilename(filename: string): IfileSpecification | undefined {
+  static getSpecificationByFilename(filename: string | undefined): IfileSpecification | undefined {
+    if (filename == undefined) return undefined
+
     if (filename == '_new') {
       let rc: IfileSpecification = {
         version: SPECIFICATION_VERSION,

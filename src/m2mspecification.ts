@@ -42,23 +42,22 @@ const log = new Logger('m2mSpecification')
 const debug = require('debug')('m2mspecification')
 
 const maxIdentifiedSpecs = 0
-
-export interface IReadRegisterResultOrError {
-  result?: ReadRegisterResult
+export interface IModbusResultOrError {
+  data?: number[]
   error?: Error
 }
 export interface ImodbusValues {
-  holdingRegisters: Map<number, IReadRegisterResultOrError>
-  analogInputs: Map<number, IReadRegisterResultOrError>
-  coils: Map<number, IReadRegisterResultOrError>
-  discreteInputs: Map<number, IReadRegisterResultOrError>
+  holdingRegisters: Map<number, IModbusResultOrError>
+  analogInputs: Map<number, IModbusResultOrError>
+  coils: Map<number, IModbusResultOrError>
+  discreteInputs: Map<number, IModbusResultOrError>
 }
 export function emptyModbusValues(): ImodbusValues {
   return {
-    holdingRegisters: new Map<number, IReadRegisterResultOrError>(),
-    coils: new Map<number, IReadRegisterResultOrError>(),
-    analogInputs: new Map<number, IReadRegisterResultOrError>(),
-    discreteInputs: new Map<number, IReadRegisterResultOrError>(),
+    holdingRegisters: new Map<number, IModbusResultOrError>(),
+    coils: new Map<number, IModbusResultOrError>(),
+    analogInputs: new Map<number, IModbusResultOrError>(),
+    discreteInputs: new Map<number, IModbusResultOrError>(),
   }
 }
 interface Icontribution {
@@ -387,12 +386,12 @@ export class M2mSpecification implements IspecificationValidator {
   }
 
   validate(language: string): Imessage[] {
-    let rc = this.validateSpecification(language, true)   
+    let rc = this.validateSpecification(language, true)
     if ((this.settings as ImodbusSpecification).entities.length > 0) {
       let mSpec = this.settings as ImodbusSpecification
       if (mSpec.identified == undefined) mSpec = M2mSpecification.fileToModbusSpecification(this.settings as IfileSpecification)
       else M2mSpecification.setIdentifiedByEntities(mSpec)
-    
+
       if (mSpec.identified != IdentifiedStates.identified)
         rc.push({ type: MessageTypes.notIdentified, category: MessageCategories.validateSpecification })
     }
@@ -428,7 +427,6 @@ export class M2mSpecification implements IspecificationValidator {
       }
     })
   }
-
 
   static fileToModbusSpecification(inSpec: IfileSpecification, values?: ImodbusValues): ImodbusSpecification {
     let valuesLocal = values
@@ -476,13 +474,14 @@ export class M2mSpecification implements IspecificationValidator {
       if (converter) {
         if (entity.modbusAddress != undefined) {
           try {
-            var data: IReadRegisterResultOrError = { result: { data: [], buffer: Buffer.from('') } }
+            var data: number[] = []
+            var error: any = undefined
             for (
               let address = entity.modbusAddress;
               address < entity.modbusAddress + converter.getModbusLength(entity);
               address++
             ) {
-              let value: IReadRegisterResultOrError | undefined = {}
+              let value: IModbusResultOrError | undefined = {}
 
               switch (entity.registerType) {
                 case ModbusRegisterType.AnalogInputs:
@@ -498,21 +497,19 @@ export class M2mSpecification implements IspecificationValidator {
                   value = values.discreteInputs.get(address)
                   break
               }
-              if (value && value.result) {
-                data.result!.data = data.result!.data.concat(value.result.data)
-                if (address == entity.modbusAddress) data.result!.buffer = Buffer.concat([value.result!.buffer])
-                else data.result!.buffer = Buffer.concat([data.result!.buffer, value.result!.buffer])
+              if (value && value.data) {
+                data = data!.concat(value.data!)
               }
               // Only the last error will survive
               if (value && value.error) {
-                data.error = value.error
+                error = value.error
               }
             }
-            if (data.result && data.result.data.length > 0) {
-              let mqtt = converter.modbus2mqtt(spec, entity.id, data.result)
+            if (data && data.length > 0) {
+              let mqtt = converter.modbus2mqtt(spec, entity.id, data)
               let identified = IdentifiedStates.unknown
               if (entity.converterParameters)
-                if (entity.converter.name === 'number') {
+                if (entity.converter === 'number') {
                   if (!(entity.converterParameters as Inumber).identification)
                     (entity as ImodbusEntity).identified = IdentifiedStates.unknown
                   else {
@@ -546,14 +543,11 @@ export class M2mSpecification implements IspecificationValidator {
                 }
               rc.identified = identified
               rc.mqttValue = mqtt
-              rc.modbusValue = data.result.data
+              rc.modbusValue = data
             } else {
               rc.identified = IdentifiedStates.notIdentified
               rc.mqttValue = ''
               rc.modbusValue = []
-            }
-            if (data.error) {
-              rc.modbusError = data.error?.message
             }
           } catch (error) {
             log.log(LogLevelEnum.error, error)
@@ -563,10 +557,7 @@ export class M2mSpecification implements IspecificationValidator {
           // It remains an Ientity
         }
       } else
-        log.log(
-          LogLevelEnum.error,
-          'Converter not found: ' + spec.filename + ' ' + entity.converter.name + ' entity id: ' + +entity.id
-        )
+        log.log(LogLevelEnum.error, 'Converter not found: ' + spec.filename + ' ' + entity.converter + ' entity id: ' + +entity.id)
 
       return rc
     } else {
@@ -575,12 +566,12 @@ export class M2mSpecification implements IspecificationValidator {
       throw new Error(msg)
     }
   }
-  private static copyFromTestData(testdata: Idata[] | undefined, data: Map<number, IReadRegisterResultOrError>) {
+  private static copyFromTestData(testdata: Idata[] | undefined, data: Map<number, IModbusResultOrError>) {
     if (testdata)
       testdata.forEach((mv) => {
         if (mv.value != undefined)
           data.set(mv.address, {
-            result: { data: [mv.value], buffer: Buffer.from([mv.value / 256, mv.value % 256]) },
+            data: [mv.value],
             error: mv.error ? new Error(mv.error) : undefined,
           })
         else data.set(mv.address, { error: mv.error ? new Error(mv.error) : undefined })
@@ -597,7 +588,8 @@ export class M2mSpecification implements IspecificationValidator {
       M2mSpecification.copyFromTestData(fSettings.testdata.holdingRegisters, values.holdingRegisters)
     if (fSettings.testdata.analogInputs) M2mSpecification.copyFromTestData(fSettings.testdata.analogInputs, values.analogInputs)
     if (fSettings.testdata.coils) M2mSpecification.copyFromTestData(fSettings.testdata.coils, values.coils)
-    if (fSettings.testdata.discreteInputs) M2mSpecification.copyFromTestData(fSettings.testdata.discreteInputs, values.discreteInputs)
+    if (fSettings.testdata.discreteInputs)
+      M2mSpecification.copyFromTestData(fSettings.testdata.discreteInputs, values.discreteInputs)
     new ConfigSpecification().filterAllSpecifications((spec) => {
       if ([SpecificationStatus.cloned, SpecificationStatus.published, SpecificationStatus.contributed].includes(spec.status)) {
         var mSpec: ImodbusSpecification | undefined = undefined
@@ -635,7 +627,7 @@ export class M2mSpecification implements IspecificationValidator {
     })
     return identifiedSpecs
   }
-  allNullDataMatch(datas: Idata[] | undefined, values: Map<number, IReadRegisterResultOrError>): boolean {
+  allNullDataMatch(datas: Idata[] | undefined, values: Map<number, IModbusResultOrError>): boolean {
     let rc = true
     if (datas)
       datas.forEach((data) => {
@@ -733,7 +725,7 @@ export class M2mSpecification implements IspecificationValidator {
           additionalInformation: getSpecificationI18nEntityName(other, 'en', oent.id),
         })
       else {
-        if (!this.isEqualValue(oent.converter.name, ent.converter.name))
+        if (!this.isEqualValue(oent.converter, ent.converter))
           rc.push({ type: MessageTypes.differentConverter, category: MessageCategories.compareEntity, referencedEntity: ent.id })
         if (!this.isEqualValue(oent.modbusAddress, ent.modbusAddress))
           rc.push({

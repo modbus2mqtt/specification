@@ -2,9 +2,6 @@
 
 ## [v0.15.29](https://github.com/modbus2mqtt/specification/tree/v0.15.29) (2025-04-14)
 
-[Full Changelog](https://github.com/modbus2mqtt/specification/compare/v0.15.28...v0.15.29)
-
-**Merged pull requests:**
 
 - Infrastructure fixes [\#3](https://github.com/modbus2mqtt/specification/pull/3) ([volkmarnissen](https://github.com/volkmarnissen))
 - Adding discrete inputs to data structures [\#2](https://github.com/modbus2mqtt/specification/pull/2) ([arturmietek](https://github.com/arturmietek))

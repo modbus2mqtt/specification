@@ -40,7 +40,7 @@ var entText: ImodbusEntity = {
   mqttValue: '',
   identified: IdentifiedStates.unknown,
   converterParameters: { stringlength: 10 },
-  converter: { name: 'text', registerTypes: [] },
+  converter: 'text',
 }
 
 let spec: IfileSpecification = {
@@ -48,7 +48,7 @@ let spec: IfileSpecification = {
     {
       id: 1,
       mqttname: 'mqtt',
-      converter: { name: 'number' as Converters, registerTypes: [] },
+      converter: 'number' as Converters,
       modbusAddress: 3,
       registerType: ModbusRegisterType.HoldingRegister,
       readonly: true,
@@ -58,7 +58,7 @@ let spec: IfileSpecification = {
     {
       id: 2,
       mqttname: 'mqtt2',
-      converter: { name: 'select' as Converters, registerTypes: [] },
+      converter: 'select' as Converters,
       modbusAddress: 4,
       registerType: ModbusRegisterType.HoldingRegister,
       readonly: true,
@@ -68,7 +68,7 @@ let spec: IfileSpecification = {
     {
       id: 3,
       mqttname: 'mqtt3',
-      converter: { name: 'select' as Converters, registerTypes: [] },
+      converter: 'select' as Converters,
       modbusAddress: 5,
       registerType: ModbusRegisterType.HoldingRegister,
       readonly: false,
@@ -126,15 +126,9 @@ describe('simple tests', () => {
     tspec.entities = [entText]
     let values: ImodbusValues = emptyModbusValues()
     if (entText.converterParameters) (entText.converterParameters as Itext).identification = 'ABCD'
-    let v = (65 << 8) | 66
-    let b = Buffer.allocUnsafe(2)
-    b.writeInt16BE(v)
-    v = (67 << 8) | 68
-    let b1 = Buffer.allocUnsafe(2)
-    b1.writeInt16BE(v)
-
-    values.holdingRegisters.set(5, { result: { data: [v], buffer: b } })
-    values.holdingRegisters.set(6, { result: { data: [v], buffer: b1 } })
+    let v: number[] = [(65 << 8) | 66, (67 << 8) | 68]
+    values.holdingRegisters.set(5, { data: [v[0]] })
+    values.holdingRegisters.set(6, { data: [v[1]] })
 
     let e = M2mSpecification.copyModbusDataToEntity(tspec, 2, values)
     expect(e.identified).toBe(IdentifiedStates.identified)

@@ -7,12 +7,12 @@ export class BinaryConverter extends Converter {
     if (!component) component = 'number'
     super(component)
   }
-  modbus2mqtt(_spec: Ispecification, _entityid: number, value: ReadRegisterResult): number | string {
-    return value.data[0] ? 'ON' : 'OFF'
+  modbus2mqtt(_spec: Ispecification, _entityid: number, value: number[]): number | string {
+    return value[0] ? 'ON' : 'OFF'
   }
 
-  override mqtt2modbus(_spec: Ispecification, _entityid: number, value: number | string): ReadRegisterResult {
-    return value == 'ON' ? { data: [1], buffer: Buffer.from([1]) } : { data: [0], buffer: Buffer.from([0]) }
+  override mqtt2modbus(_spec: Ispecification, _entityid: number, value: number | string): number[] {
+    return value == 'ON' ? [1] : [0]
   }
   override getParameterType(_entity: Ientity): string | undefined {
     return 'Ibinary'

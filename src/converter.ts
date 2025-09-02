@@ -11,8 +11,8 @@ export abstract class Converter {
     return 1
   }
 
-  abstract modbus2mqtt(spec: Ispecification, entityid: number, value: ReadRegisterResult): number | string
-  abstract mqtt2modbus(spec: Ispecification, entityid: number, _value: number | string): ReadRegisterResult
+  abstract modbus2mqtt(spec: Ispecification, entityid: number, value: number[]): number | string
+  abstract mqtt2modbus(spec: Ispecification, entityid: number, _value: number | string): number[]
   // the following methods must work w/o meta data because they are needed for the converter ui
   getRequiredParameters(): string[] {
     return []

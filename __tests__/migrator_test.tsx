@@ -11,7 +11,7 @@ it('check device type status', () => {
   let spec = ConfigSpecification.getSpecificationByFilename('dimplexpco5')
   expect(spec?.testdata.holdingRegisters?.length).toBeGreaterThan(0)
   spec?.entities.forEach((e) => {
-    expect(e.converter.name.indexOf('sensor')).toBe(-1)
+    expect(e.converter.indexOf('sensor')).toBe(-1)
     expect((e as any).functionCode).toBeUndefined()
     expect(e.readonly).toBeDefined()
     expect(e.registerType).toBeDefined()
