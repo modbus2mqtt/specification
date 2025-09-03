@@ -1,5 +1,9 @@
 # Changelog for specification
 
+## [v0.15.34](https://github.com/modbus2mqtt/specification/tree/v0.15.34) (2025-09-03)
+
+[Full Changelog](https://github.com/modbus2mqtt/specification/compare/v0.15.33...v0.15.34)
+
 ## [v0.15.33](https://github.com/modbus2mqtt/specification/tree/v0.15.33) (2025-09-03)
 
 [Full Changelog](https://github.com/modbus2mqtt/specification/compare/v0.15.32...v0.15.33)
