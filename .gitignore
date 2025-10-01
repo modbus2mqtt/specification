@@ -11,5 +11,5 @@ ssl/
 tv.sh
 __tests__/yaml-dir/publictest
 junit.xml
-coverage.txt
+coverage*.*
 act.txt
