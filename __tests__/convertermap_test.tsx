@@ -142,25 +142,41 @@ it('test select_sensor converter', () => {
 })
 let r68 = [(65 << 8) | 66, (67 << 8) | 68]
 let r69 = [(65 << 8) | 66, (67 << 8) | 68, 69 << 8]
-
-it('test text_sensor converter', () => {
-  let entity: Ientity = {
+function executeTextSensorTests(text:string, registers:number[],swapBytes=false) { 
+   let entity: Ientity = {
     id: 1,
     mqttname: 'mqtt',
     converter: 'text',
-    converterParameters: { stringlength: 10 },
+    converterParameters: { stringlength: 10 , swapBytes: swapBytes  },
     registerType: ModbusRegisterType.HoldingRegister,
     readonly: false,
     modbusAddress: 2,
   }
   spec.entities = [entity]
   let sensorConverter = ConverterMap.getConverter(entity)
-
-  let mqttValue = sensorConverter?.modbus2mqtt(spec, entity.id, r68)
-  expect(mqttValue).toBe('ABCD')
-
-  mqttValue = sensorConverter?.modbus2mqtt(spec, entity.id, r69)
-  expect(mqttValue).toBe('ABCDE')
+  let swappedRegisters:number[]=[];
+  if(swapBytes ) 
+    for( let i=0; i<registers.length; i++) {
+        let v = registers[i]    
+        let b0 = (registers[i] & 0x00FF) << 8
+        let b1 = (registers[i] & 0xFF00) >> 8
+        swappedRegisters.push(b1|b0)
+      }
+  else
+    swappedRegisters=registers;
+  
+  let v = sensorConverter!.mqtt2modbus(spec, entity.id, text)
+  expect(v).toEqual(swappedRegisters)  
+  let mqttValue = sensorConverter?.modbus2mqtt(spec, entity.id, swappedRegisters)
+  expect(mqttValue).toBe(text)
+}
+it('test text_sensor converter ABCD', () => {
+  executeTextSensorTests('ABCD', r68, false );
+  executeTextSensorTests('ABCD', r68, true );
+});
+it('test text_sensor converter ABCDE', () => {
+  executeTextSensorTests('ABCDE', r69, false );
+  executeTextSensorTests('ABCDE', r69, true );
 })
 
 it('test value_sensor converter', () => {
