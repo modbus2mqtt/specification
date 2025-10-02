@@ -142,25 +142,41 @@ it('test select_sensor converter', () => {
 })
 let r68 = [(65 << 8) | 66, (67 << 8) | 68]
 let r69 = [(65 << 8) | 66, (67 << 8) | 68, 69 << 8]
-
-it('test text_sensor converter', () => {
-  let entity: Ientity = {
+function executeTextSensorTests(text:string, registers:number[],swapBytes=false) { 
+   let entity: Ientity = {
     id: 1,
     mqttname: 'mqtt',
     converter: 'text',
-    converterParameters: { stringlength: 10 },
+    converterParameters: { stringlength: 10 , swapBytes: swapBytes  },
     registerType: ModbusRegisterType.HoldingRegister,
     readonly: false,
     modbusAddress: 2,
   }
   spec.entities = [entity]
   let sensorConverter = ConverterMap.getConverter(entity)
-
-  let mqttValue = sensorConverter?.modbus2mqtt(spec, entity.id, r68)
-  expect(mqttValue).toBe('ABCD')
-
-  mqttValue = sensorConverter?.modbus2mqtt(spec, entity.id, r69)
-  expect(mqttValue).toBe('ABCDE')
+  let swappedRegisters:number[]=[];
+  if(swapBytes ) 
+    for( let i=0; i<registers.length; i++) {
+        let v = registers[i]    
+        let b0 = (registers[i] & 0x00FF) << 8
+        let b1 = (registers[i] & 0xFF00) >> 8
+        swappedRegisters.push(b1|b0)
+      }
+  else
+    swappedRegisters=registers;
+  
+  let v = sensorConverter!.mqtt2modbus(spec, entity.id, text)
+  expect(v).toEqual(swappedRegisters)  
+  let mqttValue = sensorConverter?.modbus2mqtt(spec, entity.id, swappedRegisters)
+  expect(mqttValue).toBe(text)
+}
+it('test text_sensor converter ABCD', () => {
+  executeTextSensorTests('ABCD', r68, false );
+  executeTextSensorTests('ABCD', r68, true );
+});
+it('test text_sensor converter ABCDE', () => {
+  executeTextSensorTests('ABCDE', r69, false );
+  executeTextSensorTests('ABCDE', r69, true );
 })
 
 it('test value_sensor converter', () => {
@@ -230,119 +246,70 @@ it('test number converter ignore decimal places when returning float', () => {
   modbusValue = converter?.mqtt2modbus(spec, entity.id, 20.07)
   expect(Math.abs(modbusValue![0] - 7)).toBeLessThan(0.00001)
 })
-it('test number float', () => {
+function executeNumberFormatTest(inNumber:number,format:EnumNumberFormat,expectedRegisters:number[], swapWords=false, swapBytes=false) {
   let entity: Ientity = {
     id: 1,
     mqttname: 'mqtt',
     converter: 'number',
-    converterParameters: { multiplier: 1, offset: 0, numberFormat: EnumNumberFormat.float32 },
+    converterParameters: { multiplier: 1, offset: 0, numberFormat:format, swapWords: swapWords, swapBytes: swapBytes },
     registerType: ModbusRegisterType.HoldingRegister,
     readonly: false,
     modbusAddress: 2,
   }
   spec.entities = [entity]
+
   let converter = ConverterMap.getConverter(spec.entities[0])
-  let modbusValue: number[] | undefined = converter?.mqtt2modbus(spec, entity.id, 17.3)
-  expect(modbusValue![0]).toBe(16778)
-  expect(modbusValue![1]).toBe(26214)
+  let modbusValue: number[] | undefined = converter?.mqtt2modbus(spec, entity.id, inNumber)
+  let swappedRegisters=expectedRegisters;
+  if(swapWords && expectedRegisters.length==2) {
+    swappedRegisters=[expectedRegisters[1],expectedRegisters[0]];
+  }
+  if(swapBytes ) {
+    let b0 = (swappedRegisters[0] & 0x00FF) << 8
+    let b1 = (swappedRegisters[0] & 0xFF00) >> 8
+    if(expectedRegisters.length<2) {
+      swappedRegisters=[b1|b0]
+    }else {
+      let b2 = (swappedRegisters[1] & 0x00FF) << 8
+      let b3 = (swappedRegisters[1] & 0xFF00) >> 8
+      swappedRegisters=[b1|b0,b3|b2]
+    }
+  } 
+  expect(modbusValue!).toEqual(swappedRegisters)
   let mqtt: number = converter?.modbus2mqtt(spec, entity.id, modbusValue!) as number
-  expect(Math.abs(mqtt! - 17.3)).toBeLessThan(0.00001)
+  expect(mqtt-inNumber).toBeLessThan(0.00001)
+}
+function executeNumberFormatTests(inNumber:number,format:EnumNumberFormat,expectedRegisters:number[]) {
+  executeNumberFormatTest(inNumber,format,expectedRegisters,false,false)
+  executeNumberFormatTest(inNumber,format,expectedRegisters,false,true)
+  if(format in [EnumNumberFormat.float32,EnumNumberFormat.signedInt32,EnumNumberFormat.unsignedInt32]){
+    executeNumberFormatTest(inNumber,format,expectedRegisters,true,true) 
+    executeNumberFormatTest(inNumber,format,expectedRegisters,true,false)
+  } 
+
+}
+
+it('test number float', () => {
+  executeNumberFormatTests( 17.3,EnumNumberFormat.float32,[0x418A,0x6666] );
 })
 
 it('test number signed int16', () => {
-  let entity: Ientity = {
-    id: 1,
-    mqttname: 'mqtt',
-    converter: 'number',
-    converterParameters: { multiplier: 1, offset: 0, numberFormat: EnumNumberFormat.signedInt16 },
-    registerType: ModbusRegisterType.HoldingRegister,
-    readonly: false,
-    modbusAddress: 2,
-  }
-  spec.entities = [entity]
-  let converter = ConverterMap.getConverter(spec.entities[0])
-  let modbusValue: number[] | undefined = converter?.mqtt2modbus(spec, entity.id, -3)
-  expect(modbusValue![0]).toBeGreaterThan(0)
-  let mqtt: number = converter?.modbus2mqtt(spec, entity.id, modbusValue!) as number
-  expect(mqtt).toBe(-3)
+  executeNumberFormatTests( -3,EnumNumberFormat.signedInt16,[65533] );
 })
 
 it('test number signed int32 - positive', () => {
-  let entity: Ientity = {
-    id: 1,
-    mqttname: 'mqtt',
-    converter: 'number',
-    converterParameters: { multiplier: 1, offset: 0, numberFormat: EnumNumberFormat.signedInt32 },
-    registerType: ModbusRegisterType.HoldingRegister,
-    readonly: false,
-    modbusAddress: 2,
-  }
-  spec.entities = [entity]
-  let converter = ConverterMap.getConverter(spec.entities[0])
-  let modbusValue: number[] | undefined = converter?.mqtt2modbus(spec, entity.id, 20)
-
-  expect(modbusValue![1]).toBeGreaterThan(0)
-  let mqtt: number = converter?.modbus2mqtt(spec, entity.id, modbusValue!) as number
-  expect(mqtt).toBe(20)
+    executeNumberFormatTests(20,EnumNumberFormat.signedInt32,[0,20]) 
 })
 
 it('test number signed int32 - positive max', () => {
-  let entity: Ientity = {
-    id: 1,
-    mqttname: 'mqtt',
-    converter: 'number',
-    converterParameters: { multiplier: 1, offset: 0, numberFormat: EnumNumberFormat.signedInt32 },
-    registerType: ModbusRegisterType.HoldingRegister,
-    readonly: false,
-    modbusAddress: 2,
-  }
-  spec.entities = [entity]
-  let converter = ConverterMap.getConverter(spec.entities[0])
-  let modbusValue: number[] | undefined = converter?.mqtt2modbus(spec, entity.id, 2147483647)
-
-  expect(modbusValue![0]).toBeGreaterThan(0)
-  let mqtt: number = converter?.modbus2mqtt(spec, entity.id, modbusValue!) as number
-  expect(mqtt).toBe(2147483647)
-})
-
-it('test number signed int32 - negative', () => {
-  let entity: Ientity = {
-    id: 1,
-    mqttname: 'mqtt',
-    converter: 'number',
-    converterParameters: { multiplier: 1, offset: 0, numberFormat: EnumNumberFormat.signedInt32 },
-    registerType: ModbusRegisterType.HoldingRegister,
-    readonly: false,
-    modbusAddress: 2,
-  }
-  spec.entities = [entity]
-  let converter = ConverterMap.getConverter(spec.entities[0])
-  let modbusValue: number[] | undefined = converter?.mqtt2modbus(spec, entity.id, -1147483647)
-
-  expect(modbusValue![0]).toBeGreaterThan(0)
-  expect(modbusValue![1]).toBeGreaterThan(0)
-  let mqtt: number = converter?.modbus2mqtt(spec, entity.id, modbusValue!) as number
-  expect(mqtt).toBe(-1147483647)
-})
+  executeNumberFormatTests(2147483647,EnumNumberFormat.signedInt32,[32767,65535])
+});
+it('test number signed int32 - negative max', () => {
+ executeNumberFormatTests(-1147483647,EnumNumberFormat.signedInt32,[0xBB9A,0xCA01])
+});
 
 it('test number unsigned int32 - max', () => {
-  let entity: Ientity = {
-    id: 1,
-    mqttname: 'mqtt',
-    converter: 'number',
-    converterParameters: { multiplier: 1, offset: 0, numberFormat: EnumNumberFormat.unsignedInt32 },
-    registerType: ModbusRegisterType.HoldingRegister,
-    readonly: false,
-    modbusAddress: 2,
-  }
-  spec.entities = [entity]
-
-  let converter = ConverterMap.getConverter(spec.entities[0])
-  let modbusValue: number[] | undefined = converter?.mqtt2modbus(spec, entity.id, 4294967295)
-
-  expect(modbusValue![0]).toBeGreaterThan(0)
-  let mqtt: number = converter?.modbus2mqtt(spec, entity.id, modbusValue!) as number
-  expect(mqtt).toBe(4294967295)
+   executeNumberFormatTests(4294967295,EnumNumberFormat.unsignedInt32,[65535,65535]) 
 })
 
 it('test select converter', () => {

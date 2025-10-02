@@ -21,8 +21,15 @@ export class TextConverter extends Converter {
       return (entity.converterParameters as Ivalue).value
     let cvP = entity?.converterParameters as Itext
     let buffer = Buffer.allocUnsafe(cvP.stringlength * 2)
-    for (let idx = 0; idx < (cvP.stringlength + 1) / 2; idx++) buffer.writeUInt16BE(value[idx], idx * 2)
-
+    for (let idx = 0; idx < (cvP.stringlength + 1) / 2; idx++) {
+      let v:number = value[idx];
+      if(cvP.swapBytes) {
+            let b1 = (v  & 0xFF00) >> 8
+            let b0 = (v  & 0x00FF) << 8
+            v = b0 | b1
+      }
+      buffer.writeUInt16BE(v, idx * 2)
+    }
     let idx = buffer.findIndex((v) => v == 0)
     if (idx >= 0) return buffer.subarray(0, idx).toString()
     return buffer.toString()
@@ -35,8 +42,13 @@ export class TextConverter extends Converter {
     if (!entity) throw new Error('entity not found in entities')
     let rc: number[] = []
     for (let i = 0; i < _value.length; i += 2) {
-      if (i + 1 < _value.length) rc.push((_value.charCodeAt(i) << 8) | _value.charCodeAt(i + 1))
-      else rc.push(_value.charCodeAt(i) << 8)
+      let v:number= (i + 1 < _value.length?_value.charCodeAt(i) << 8 | _value.charCodeAt(i + 1):_value.charCodeAt(i) << 8)
+      if(entity.converterParameters && 'swapBytes' in entity.converterParameters && entity.converterParameters.swapBytes) {
+            let b1 = (v  & 0xFF00) >> 8
+            let b0 = (v  & 0x00FF) << 8
+            v = b0 | b1
+      }
+      rc.push(v)
     }
     return rc
   }
