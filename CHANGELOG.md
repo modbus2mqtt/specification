@@ -6,6 +6,7 @@
 
 **Merged pull requests:**
 
+- Fix package.json after release: Remove version number [\#14](https://github.com/modbus2mqtt/specification/pull/14) ([volkmarnissen](https://github.com/volkmarnissen))
 - Swap Words and Swap Bytes for numbers [\#13](https://github.com/modbus2mqtt/specification/pull/13) ([volkmarnissen](https://github.com/volkmarnissen))
 
 ## [v0.15.34](https://github.com/modbus2mqtt/specification/tree/v0.15.34) (2025-09-03)
